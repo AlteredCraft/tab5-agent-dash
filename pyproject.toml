@@ -1,0 +1,17 @@
+[project]
+name = "tab5-agent-dash"
+version = "0.1.0"
+description = "Agent token usage dashboard for the M5Stack Tab5: Mac collector and device app"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pillow>=13.0.0",
+    "pyserial>=3.5",
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "device"]
+testpaths = ["tests"]

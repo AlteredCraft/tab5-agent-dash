@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tab5-agent-dash: an agent usage dashboard for the M5Stack Tab5</title>
+<meta name="description" content="A desk dashboard for Claude Code and OpenRouter usage on the M5Stack Tab5, with three switchable themes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #E6EBEA;
+    --panel: #F7FAF9;
+    --ink: #14213D;
+    --muted: #55636B;
+    --line: #B9C4C8;
+    --cobalt: #1F4FD8;
+    --amber: #F2A20C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--paper); color: var(--ink); font: 17px/1.55 Figtree, system-ui, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 56px 24px 96px; }
+  h1, h2, h3 { font-family: "Barlow Semi Condensed", system-ui, sans-serif; font-weight: 600; line-height: 1.1; }
+  h1 { font-size: clamp(40px, 7vw, 68px); max-width: 16ch; }
+  h2 { font-size: 34px; margin-bottom: 14px; }
+  h3 { font-size: 22px; margin-bottom: 6px; }
+  p { max-width: 66ch; }
+  section { margin-top: 88px; }
+  a { color: var(--cobalt); }
+  code { font: 0.88em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  p code, li code, td code { background: var(--panel); padding: 1px 5px; border-radius: 3px; }
+  pre { background: var(--ink); color: #E6EBEA; padding: 16px 20px; overflow-x: auto; border-radius: 4px; }
+  pre .c { color: #8FA0B8; }
+  .lede { font-size: 21px; margin-top: 20px; color: var(--muted); }
+  img { display: block; max-width: 100%; height: auto; }
+  :focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+
+  /* Theme viewer: a bezel around the screen, switched like the device */
+  .device { margin-top: 44px; background: #0E1626; padding: clamp(10px, 2.2vw, 26px); border-radius: clamp(10px, 2vw, 22px); position: relative; }
+  .screen { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
+  .screen img { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+  .screen img.on { opacity: 1; }
+  .screen button { position: absolute; top: 0; bottom: 0; width: 33.34%; background: none; border: 0; cursor: pointer; }
+  .screen button.prev { left: 0; }
+  .screen button.next { right: 0; }
+  .viewer-bar { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-top: 16px; }
+  .viewer-bar button { font: 600 16px Figtree, sans-serif; color: var(--ink); background: var(--panel); border: 2px solid var(--ink); padding: 7px 14px; border-radius: 3px; cursor: pointer; }
+  .viewer-bar button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+  .viewer-bar span { color: var(--muted); font-size: 15px; margin-left: 4px; }
+
+  /* Data flow */
+  .flow { display: grid; grid-template-columns: 1.15fr auto 1fr auto 1fr; gap: 14px; align-items: stretch; margin-top: 28px; }
+  .box { background: var(--panel); border: 2px solid var(--ink); padding: 16px 18px; border-radius: 4px; }
+  .box small { display: block; color: var(--muted); font-size: 14.5px; line-height: 1.4; margin-top: 4px; }
+  .box ul { list-style: none; margin-top: 10px; }
+  .box li { border-top: 1px solid var(--line); padding: 8px 0 6px; font-weight: 600; }
+  .box li small { font-weight: 400; margin-top: 1px; }
+  .box.device-box { background: var(--ink); color: var(--panel); }
+  .box.device-box small { color: #A9B6C9; }
+  .arrow { align-self: center; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.3; }
+  .arrow b { display: block; font-size: 30px; color: var(--ink); line-height: 1; }
+
+  .steps { list-style: none; counter-reset: step; margin-top: 24px; display: grid; gap: 22px; }
+  .steps > li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 0 16px; }
+  .steps > li::before { content: counter(step); font: 600 26px "Barlow Semi Condensed", sans-serif; width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 50%; }
+  .steps > li > div { min-width: 0; }
+  .steps p { margin-bottom: 10px; }
+
+  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; border-bottom: 2px solid var(--ink); }
+  td:first-child { white-space: nowrap; }
+  #story td:first-child { white-space: normal; width: 30%; }
+  .steps h3 { margin-top: 6px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; margin-top: 24px; }
+  .split figure img { border: 2px solid var(--ink); }
+  figcaption { color: var(--muted); font-size: 15px; margin-top: 8px; }
+  .limits { margin-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .limits div { background: var(--panel); border-top: 4px solid var(--cobalt); padding: 14px 16px; }
+  .limits b { font: 600 30px "Barlow Semi Condensed", sans-serif; display: block; line-height: 1.1; }
+  .limits span { color: var(--muted); font-size: 15px; }
+  footer { margin-top: 88px; color: var(--muted); font-size: 15px; border-top: 1px solid var(--line); padding-top: 18px; }
+
+  @media (max-width: 760px) {
+    .flow { grid-template-columns: 1fr; }
+    .arrow b { transform: rotate(90deg); }
+    .split, .limits { grid-template-columns: 1fr; }
+    td:first-child { white-space: normal; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .screen img { transition: opacity 0.25s; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Agent spend on a screen beside your keyboard</h1>
+    <p class="lede">This is a token usage display for the <a href="https://docs.m5stack.com/en/core/Tab5">M5Stack Tab5</a>, a 5-inch touchscreen board built on the ESP32-P4. It sits on your desk and shows what your coding agents are costing you: Claude Code and OpenRouter spend today, the 5-hour and 7-day limits, the current burn rate and the credit you have left. It has three themes, written in Python, and you can add your own.</p>
+
+    <div class="device">
+      <div class="screen" id="screen">
+        <img class="on" src="img/dial.png" alt="Day dial theme: a 24-hour clock face with an orange bar for each hour's spend, limit rings around it, and limits, burn rate, projects and OpenRouter credit listed on the right.">
+        <img src="img/gauge.png" alt="Gauge glass theme: three measuring tubes filled to the 5-hour limit, the 7-day limit and the remaining OpenRouter credit, with today's cost in the middle.">
+        <img src="img/poster.png" alt="Poster theme: today's cost in very large numerals on a yellow field, OpenRouter credit on a blue field, and thirty daily bars along the bottom.">
+        <button class="prev" aria-label="Previous theme"></button>
+        <button class="next" aria-label="Next theme"></button>
+      </div>
+    </div>
+    <div class="viewer-bar" id="tabs">
+      <button aria-pressed="true">Day dial</button>
+      <button aria-pressed="false">Gauge glass</button>
+      <button aria-pressed="false">Poster</button>
+      <span>On the device, tap the right third of the screen for the next theme and the left third for the previous one. The picture works the same way.</span>
+    </div>
+  </header>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <p>The usage data lives on your Mac, so a small collector gathers it there and serves one JSON document. The Tab5 polls it over Wi-Fi every five seconds and redraws only what changed.</p>
+    <div class="flow">
+      <div class="box">
+        <h3>Sources on the Mac</h3>
+        <ul>
+          <li>Claude Code transcripts<small>Tokens and estimated cost by day, hour, model and project</small></li>
+          <li>Claude Code status line<small>5-hour and 7-day limit percentages</small></li>
+          <li>OpenRouter API<small>Credit left and spend per key</small></li>
+        </ul>
+      </div>
+      <div class="arrow"><b>&rarr;</b></div>
+      <div class="box">
+        <h3>Collector</h3>
+        <small>Python, standard library only. Serves <code>/usage.json</code> on port 8787 and keeps API keys off the device.</small>
+      </div>
+      <div class="arrow"><b>&rarr;</b>Wi-Fi</div>
+      <div class="box device-box">
+        <h3>Tab5</h3>
+        <small>MicroPython on UIFlow2. One engine handles polling, animation and touch; each theme is a single file.</small>
+      </div>
+    </div>
+    <p style="margin-top:22px">Costs are estimates at API prices, not subscription charges.</p>
+  </section>
+
+  <section id="story">
+    <h2>From a prompt to the screen</h2>
+    <p>Nothing talks to Claude Code directly. Claude Code leaves two files behind as you work, and the collector reads them when the Tab5 asks.</p>
+    <ol class="steps">
+      <li><div>
+        <h3>You send a prompt, in any folder</h3>
+        <p>Claude Code appends each reply, with its token counts, to a transcript file under <code>~/.claude/projects</code>. It does this whether or not the dashboard exists.</p>
+      </div></li>
+      <li><div>
+        <h3>Claude Code runs the status line command</h3>
+        <p>After each reply, a terminal session hands the command your current 5-hour and 7-day percentages. The command saves them to <code>~/.cache/tab5-agent-dash/limits.json</code> and prints the line you see at the bottom of the terminal. It never contacts the collector.</p>
+      </div></li>
+      <li><div>
+        <h3>The Tab5 asks the collector</h3>
+        <p>Every five seconds the Tab5 requests <code>/usage.json</code>. The collector re-reads any transcript that changed, reads the limits file, asks OpenRouter at most once a minute, and answers.</p>
+      </div></li>
+      <li><div>
+        <h3>The screen updates</h3>
+        <p>The engine redraws the regions whose figures changed, so a reply shows on the desk within about five seconds.</p>
+      </div></li>
+    </ol>
+
+    <div class="limits" style="margin-top:32px">
+      <div><b>Collector stopped</b><span>Claude Code keeps writing both files. The Tab5 holds the last figures, says how long it has had no data, and catches up when the collector returns.</span></div>
+      <div><b>No terminal session</b><span>The limit figures stop refreshing. A limit disappears from the screen once its reset time passes, until a session reports it again.</span></div>
+      <div><b>Mac asleep</b><span>Same as the collector being stopped. Nothing is lost, because the transcripts are the record.</span></div>
+    </div>
+
+    <h3 style="margin-top:40px">What counts, by where you work</h3>
+    <table>
+      <thead><tr><th>Where</th><th>Tokens and cost</th><th>Limit percentages</th></tr></thead>
+      <tbody>
+        <tr><td>Claude Code in a terminal</td><td>Shown</td><td>Shown, refreshed after each reply</td></tr>
+        <tr><td>Claude Code in the desktop app</td><td>Shown. It writes the same transcripts on this Mac</td><td>Counted, but refreshed only when a terminal session next reports</td></tr>
+        <tr><td>Chat in the desktop app, on the web or on a phone</td><td>Not shown. Chats leave no transcript on the Mac</td><td>Counted, but refreshed only when a terminal session next reports</td></tr>
+        <tr><td>Claude Code on another computer or in the cloud</td><td>Not shown</td><td>Counted, but refreshed only when a terminal session next reports</td></tr>
+        <tr><td>OpenRouter, from anywhere</td><td colspan="2">Shown. Credit and spend come from your OpenRouter account</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:18px">The limits belong to your Claude account, so everything you do with Claude moves them. The dashboard only learns the new figures from a Claude Code terminal session on this Mac.</p>
+  </section>
+
+  <section id="start">
+    <h2>Install it on a Tab5</h2>
+    <p>You have a Tab5 and a Mac. You also need a USB-C data cable, <a href="https://docs.astral.sh/uv/">uv</a>, and a 2.4 GHz Wi-Fi network that both the Mac and the Tab5 can join. Everything else is downloaded by the commands below.</p>
+    <ol class="steps">
+      <li><div>
+        <h3>Get the code</h3>
+        <p>Clone the repository and work from its folder. <code>make</code> on its own lists every command.</p>
+        <pre>git clone https://github.com/AlteredCraft/tab5-agent-dash.git
+cd tab5-agent-dash
+make</pre>
+      </div></li>
+      <li><div>
+        <h3>Put MicroPython on the Tab5</h3>
+        <p>Plug the Tab5 into the Mac. This downloads M5Stack's UIFlow2 firmware, checks it, and writes it to the device. It replaces whatever the Tab5 was running, and you only do it once.</p>
+        <pre>make firmware</pre>
+        <p style="margin-top:10px">If the flasher cannot connect, put the Tab5 in download mode as <a href="https://docs.m5stack.com/en/core/Tab5">M5Stack's Tab5 page</a> describes, then run it again.</p>
+      </div></li>
+      <li><div>
+        <h3>Start the collector on the Mac</h3>
+        <p>Leave this running in its own terminal. The env file holds <code>OPENROUTER_API_KEY</code>; leave <code>ENV</code> out to show Claude Code only.</p>
+        <pre>make serve ENV=path/to/openrouter.env</pre>
+      </div></li>
+      <li><div>
+        <h3>Install the dashboard</h3>
+        <p>Write a two-line file with your network's <code>WIFI_NAME</code> and <code>WIFI_PASSWORD</code>. This copies the app and its fonts to the Tab5, stores the Wi-Fi details on it in plain text, and restarts it into the dashboard. Figures appear a few seconds later.</p>
+        <pre>make provision WIFI=path/to/wifi.env</pre>
+      </div></li>
+      <li><div>
+        <h3>Turn on the limits</h3>
+        <p>To show the 5-hour and 7-day limits, add the status line command to the settings file in your home directory, <code>~/.claude/settings.json</code>. Put it there, not in a project's <code>.claude</code> folder, so it runs for sessions in every folder. Claude Code gives the limit figures only to a status line command.</p>
+        <pre>"statusLine": {
+  "type": "command",
+  "command": "uv run --no-project python /path/to/tab5-agent-dash/collector/limits.py"
+}</pre>
+      </div></li>
+    </ol>
+    <p style="margin-top:22px">After a code change, <code>make start</code> updates the Tab5. The collector has no authentication. Anyone on the same network can read your usage figures and project names; <code>make serve HOST=127.0.0.1</code> keeps it on the Mac.</p>
+  </section>
+
+  <section id="tasks">
+    <h2>Everyday commands</h2>
+    <table>
+      <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>make</code></td><td>Lists every target and variable</td></tr>
+        <tr><td><code>make test</code></td><td>Runs the tests, including every theme drawn in every data state</td></tr>
+        <tr><td><code>make preview</code></td><td>Draws all themes to PNG on the Mac with sample data</td></tr>
+        <tr><td><code>make preview-live</code></td><td>The same, with live data from the running collector</td></tr>
+        <tr><td><code>make firmware</code></td><td>Installs UIFlow2 on a Tab5, once per device</td></tr>
+        <tr><td><code>make provision WIFI=…</code></td><td>Sets Wi-Fi and the collector address, then starts the dashboard</td></tr>
+        <tr><td><code>make start</code></td><td>Copies changed files to the Tab5 and restarts the dashboard</td></tr>
+        <tr><td><code>make ports</code></td><td>Shows which serial port is the Tab5</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="themes">
+    <h2>Write a theme</h2>
+    <p>A theme is a module in <code>device/dash/themes/</code> that divides the screen into regions. Each region has a draw function and a key: the values it depends on. The engine redraws a region only when its key changes, and eases the fields named in <code>ANIMATE</code> toward new values.</p>
+    <div class="split">
+      <figure>
+        <img src="img/dial-regions.png" alt="The Day dial theme with each of its nine regions outlined: the dial, the centre numeral and its caption, the limits, the burn rate, the weekly projects, the OpenRouter credit and three divider lines.">
+        <figcaption>Day dial's regions. A new figure for today's cost redraws only the small box in the centre of the dial.</figcaption>
+      </figure>
+<pre><span class="c"># device/dash/themes/minimal.py</span>
+from ..engine import Region
+from ..model import money
+
+NAME = "Minimal"
+BACKGROUND = 0x101820
+ANIMATE = ("today_cost",)
+
+def _cost(s, m):
+    s.text(money(m["today_cost"]),
+           20, 20, "g_num132", 0xFFFFFF)
+
+def _cents(m):
+    return round(m["today_cost"] * 100)
+
+def regions():
+    return [
+        Region(40, 40, 600, 160,
+               _cost, key=_cents),
+    ]</pre>
+    </div>
+    <p style="margin-top:22px">Add the module to <code>themes/__init__.py</code>, run <code>make preview</code> to see it, and <code>make start</code> to put it on the device. The Mac preview runs the same theme code with the same font files, and its text measurements were checked against the device, so what you see in the PNG is the layout you get on the screen.</p>
+
+    <div class="limits">
+      <div><b>One font</b><span>per animated region. Switching fonts on the device costs about 10 ms each time.</span></div>
+      <div><b>150 px</b><span>is the tallest glyph the device draws safely. Larger numerals are stored at half size and doubled.</span></div>
+      <div><b>0.6 s</b><span>for a full-screen redraw, so keep animated regions small. Small ones redraw in about 10 ms.</span></div>
+    </div>
+  </section>
+
+  <footer><a href="https://github.com/AlteredCraft/tab5-agent-dash">Source on GitHub</a>. Theme images on this page are drawn from sample data by <code>make docs</code>. Fonts are under the SIL Open Font License.</footer>
+</main>
+
+<script>
+  const images = [...document.querySelectorAll("#screen img")];
+  const tabs = [...document.querySelectorAll("#tabs button")];
+  let current = 0;
+  function show(index) {
+    current = (index + images.length) % images.length;
+    images.forEach((image, i) => image.classList.toggle("on", i === current));
+    tabs.forEach((tab, i) => tab.setAttribute("aria-pressed", i === current));
+  }
+  tabs.forEach((tab, i) => tab.addEventListener("click", () => show(i)));
+  document.querySelector("#screen .prev").addEventListener("click", () => show(current - 1));
+  document.querySelector("#screen .next").addEventListener("click", () => show(current + 1));
+</script>
+</body>
+</html>

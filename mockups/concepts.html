@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tab5 agent usage dashboard: three concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=Barlow+Condensed:wght@500;600&family=Barlow+Semi+Condensed:wght@400;500;600&family=Big+Shoulders+Display:wght@800&family=Figtree:wght@400;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<script src="snapshot.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #d9d9d6; color: #222; font: 16px/1.5 Figtree, system-ui, sans-serif; padding: 40px 0 80px; }
+  .page { width: 1280px; margin: 0 auto; }
+  .page > h1 { font-size: 28px; font-weight: 600; }
+  .page > p { max-width: 70ch; margin-top: 8px; }
+  .concept { margin-top: 56px; }
+  .concept h2 { font-size: 22px; font-weight: 600; }
+  .concept .notes { max-width: 75ch; margin: 4px 0 16px; }
+  .frame { position: relative; width: 1280px; height: 720px; overflow: hidden; }
+  .frame svg { position: absolute; inset: 0; }
+  .frame .t { position: absolute; white-space: nowrap; line-height: 1; font-variant-numeric: tabular-nums; }
+
+  /* A: gauge glass */
+  #a { background: #E6EBEA; color: #14213D; font-family: "Barlow Semi Condensed", sans-serif; }
+  #a .big { font-family: "Barlow Condensed", sans-serif; font-weight: 600; }
+  #a .muted { color: #5C6B73; }
+
+  /* B: day dial */
+  #b { background: #1B1530; color: #F3EEFF; font-family: Figtree, sans-serif; }
+  #b .num { font-family: Unbounded, sans-serif; font-weight: 700; }
+  #b .muted { color: #9D93BF; }
+
+  /* C: poster */
+  #c { background: #14143C; color: #14143C; font-family: Archivo, sans-serif; font-weight: 500; }
+  #c .huge { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; }
+  #c .field { position: absolute; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Tab5 agent usage dashboard: three concepts</h1>
+  <p>Each frame is the device's real size, 1280 by 720. All figures are sample values.</p>
+
+  <section class="concept">
+    <h2>A. Gauge glass</h2>
+    <p class="notes">Limits and credit are liquid in measuring tubes: Claude Code limits fill up as you use them, OpenRouter credit drains. The levels glide to new values, and a tube turns red above 90%.</p>
+    <div class="frame" id="a"></div>
+  </section>
+
+  <section class="concept">
+    <h2>B. Day dial</h2>
+    <p class="notes">A 24-hour clock face with midnight at the top. Each hour's spend is a bar pointing outward, the hand marks now, and the two outer rings are the 5-hour and 7-day limits. The current hour's bar grows while you work.</p>
+    <div class="frame" id="b"></div>
+  </section>
+
+  <section class="concept">
+    <h2>C. Poster</h2>
+    <p class="notes">Two flat colour fields and very large numerals, readable from across the room. The numerals count up as spend arrives, and the bottom band is the last 30 days.</p>
+    <div class="frame" id="c"></div>
+  </section>
+</div>
+
+<script>
+const S = window.SNAP;
+const TODAY = {
+  cost: 38.20, tokens: "31.4M", written: "212K", perMin: "2,340", perHour: 5.50, nowHour: 15.67,
+  hourly: [0, 0, 0, 0, 0, 0, 0.4, 3.1, 5.2, 2.2, 6.8, 4.1, 0.6, 2.9, 7.4, 5.5],
+  fiveHour: { used: 62, resets: "resets in 1 h 48 min" },
+  sevenDay: { used: 34, resets: "resets Sunday 18:00" },
+};
+const daily = S.daily.slice(0, -1).concat(TODAY.cost);
+const money = (n) => "$" + n.toFixed(2);
+const modelName = (id) => id.replace("claude-", "").replace(/-(\d)-(\d)$/, " $1.$2").replace(/^./, (c) => c.toUpperCase());
+const NS = "http://www.w3.org/2000/svg";
+
+function svg(frame) {
+  const el = document.createElementNS(NS, "svg");
+  el.setAttribute("viewBox", "0 0 1280 720");
+  frame.appendChild(el);
+  return (tag, attrs) => {
+    const node = document.createElementNS(NS, tag);
+    for (const k in attrs) node.setAttribute(k, attrs[k]);
+    el.appendChild(node);
+    return node;
+  };
+}
+function text(frame, x, y, size, content, opts = {}) {
+  const el = document.createElement("div");
+  el.className = "t " + (opts.cls || "");
+  el.textContent = content;
+  el.style.cssText = `top:${y}px;font-size:${size}px;` +
+    (opts.right !== undefined ? `right:${1280 - opts.right}px;` : opts.center ? `left:${x}px;transform:translateX(-50%);` : `left:${x}px;`) +
+    (opts.color ? `color:${opts.color};` : "") + (opts.weight ? `font-weight:${opts.weight};` : "");
+  frame.appendChild(el);
+}
+const rect = (draw, x, y, w, h, fill, extra = {}) => draw("rect", { x, y, width: w, height: h, fill, ...extra });
+
+/* Annular sector, matching the device's fillArc(cx, cy, r0, r1, a0, a1). Angles in degrees, 0 at top, clockwise. */
+function sector(draw, cx, cy, r0, r1, a0, a1, fill) {
+  const p = (r, a) => {
+    const rad = (a - 90) * Math.PI / 180;
+    return `${(cx + r * Math.cos(rad)).toFixed(2)} ${(cy + r * Math.sin(rad)).toFixed(2)}`;
+  };
+  const large = a1 - a0 > 180 ? 1 : 0;
+  return draw("path", { fill, d: `M${p(r1, a0)} A${r1} ${r1} 0 ${large} 1 ${p(r1, a1)} L${p(r0, a1)} A${r0} ${r0} 0 ${large} 0 ${p(r0, a0)}Z` });
+}
+
+/* ---------- A: gauge glass ---------- */
+(function () {
+  const f = document.getElementById("a"), d = svg(f);
+  const INK = "#14213D", COBALT = "#1F4FD8", AMBER = "#F2A20C", GLASS = "#F7FAF9", TICK = "#8C9AA1";
+
+  function tube(x, level, color, title, sub, readout) {
+    const top = 104, h = 430, w = 104;
+    rect(d, x, top, w, h, GLASS);
+    const fillH = Math.round(h * level / 100);
+    rect(d, x, top + h - fillH, w, fillH, color);
+    rect(d, x, top + h - fillH, w, 5, INK);
+    rect(d, x, top, w, h, "none", { stroke: INK, "stroke-width": 4 });
+    for (let i = 0; i <= 10; i++) {
+      const y = top + h - h * i / 10;
+      rect(d, x + w + 8, y - 1, i % 5 === 0 ? 22 : 12, 2, i % 5 === 0 ? INK : TICK);
+      if (i % 5 === 0) text(f, x + w + 36, y - 9, 18, String(i * 10), { cls: "muted" });
+    }
+    text(f, x, 556, 60, readout, { cls: "big" });
+    text(f, x, 624, 22, title, { weight: 600 });
+    text(f, x, 654, 20, sub, { cls: "muted" });
+  }
+
+  text(f, 48, 36, 30, "Claude Code", { weight: 600 });
+  rect(d, 706, 44, 14, 14, COBALT);
+  text(f, 730, 40, 22, "1 session working", { cls: "muted" });
+  tube(48, TODAY.fiveHour.used, COBALT, "5-hour limit", TODAY.fiveHour.resets, TODAY.fiveHour.used + "%");
+  tube(250, TODAY.sevenDay.used, COBALT, "7-day limit", TODAY.sevenDay.resets, TODAY.sevenDay.used + "%");
+
+  const mx = 468;
+  text(f, mx, 104, 22, "Today", { cls: "muted" });
+  text(f, mx, 128, 132, money(TODAY.cost), { cls: "big" });
+  text(f, mx, 264, 24, `${TODAY.tokens} tokens, ${TODAY.written} written`);
+  text(f, mx, 298, 24, `${money(TODAY.perHour)} an hour right now`, { color: COBALT, weight: 600 });
+
+  const base = 470, maxH = 104, peak = Math.max(...TODAY.hourly);
+  for (let h = 0; h < 24; h++) {
+    const v = TODAY.hourly[h] || 0, bh = Math.round(maxH * v / peak);
+    rect(d, mx + h * 17, base - Math.max(bh, 2), 13, Math.max(bh, 2), v ? (h === 15 ? COBALT : INK) : TICK);
+  }
+  rect(d, mx, base + 4, 24 * 17 - 4, 2, INK);
+  [0, 6, 12, 18].forEach((h) => text(f, mx + h * 17, base + 12, 18, h + ":00", { cls: "muted" }));
+
+  text(f, mx, 536, 22, "This week by model", { cls: "muted" });
+  S.models.forEach((m, i) => {
+    const y = 572 + i * 46, w = Math.max(6, Math.round(210 * m.cost / S.models[0].cost));
+    text(f, mx, y, 24, modelName(m.name), { weight: 500 });
+    rect(d, mx + 120, y + 2, w, 20, i === 0 ? COBALT : INK);
+    text(f, mx + 120 + w + 10, y, 24, money(m.cost));
+  });
+
+  rect(d, 900, 36, 2, 648, TICK);
+  const o = S.openrouter;
+  text(f, 934, 36, 30, "OpenRouter", { weight: 600 });
+  tube(934, Math.round(100 * o.remaining / o.total), AMBER, "Credit left", `of ${money(o.total)} bought`, money(o.remaining));
+  text(f, 1100, 300, 22, "This key", { cls: "muted" });
+  text(f, 1100, 328, 44, money(o.key_usage), { cls: "big" });
+  text(f, 1100, 378, 20, `of a ${money(o.key_limit)} cap`, { cls: "muted" });
+  text(f, 1100, 440, 22, "All keys", { cls: "muted" });
+  text(f, 1100, 468, 44, money(o.used), { cls: "big" });
+  text(f, 1100, 518, 20, "spent so far", { cls: "muted" });
+})();
+
+/* ---------- B: day dial ---------- */
+(function () {
+  const f = document.getElementById("b"), d = svg(f);
+  const TRACK = "#2E2550", ORANGE = "#FF9F45", PINK = "#FF5D8F", MINT = "#6EE7C5", TEXT = "#F3EEFF";
+  const cx = 350, cy = 360, r0 = 150, maxLen = 108, peak = Math.max(...TODAY.hourly);
+
+  for (let h = 0; h < 24; h++) {
+    const a0 = h * 15 + 1.5, a1 = (h + 1) * 15 - 1.5, v = TODAY.hourly[h];
+    sector(d, cx, cy, r0, r0 + 8, a0, a1, TRACK);
+    if (v) sector(d, cx, cy, r0, r0 + 8 + maxLen * v / peak, a0, a1, h === 15 ? "#FFD08A" : ORANGE);
+  }
+  sector(d, cx, cy, 292, 306, 0, 359.99, TRACK);
+  sector(d, cx, cy, 292, 306, 0, 3.6 * TODAY.fiveHour.used, PINK);
+  sector(d, cx, cy, 314, 328, 0, 359.99, TRACK);
+  sector(d, cx, cy, 314, 328, 0, 3.6 * TODAY.sevenDay.used, MINT);
+
+  const now = TODAY.nowHour * 15;
+  sector(d, cx, cy, 128, 284, now - 0.5, now + 0.5, TEXT);
+  [[0, "0"], [6, "6"], [12, "12"], [18, "18"]].forEach(([h, label]) => {
+    const rad = (h * 15 - 90) * Math.PI / 180;
+    text(f, cx + 118 * Math.cos(rad), cy + 118 * Math.sin(rad) - 9, 18, label, { cls: "muted", center: true });
+  });
+  text(f, cx, cy - 44, 46, money(TODAY.cost), { cls: "num", center: true });
+  text(f, cx, cy + 14, 20, "today in Claude Code", { cls: "muted", center: true });
+  text(f, cx, cy + 42, 20, `${TODAY.tokens} tokens`, { cls: "muted", center: true });
+
+  const x = 740;
+  rect(d, x, 56, 8, 108, PINK);
+  text(f, x + 26, 52, 60, TODAY.fiveHour.used + "%", { cls: "num", color: PINK });
+  text(f, x + 26, 118, 20, "5-hour limit", { weight: 600 });
+  text(f, x + 26, 144, 18, TODAY.fiveHour.resets, { cls: "muted" });
+  rect(d, x + 270, 56, 8, 108, MINT);
+  text(f, x + 296, 52, 60, TODAY.sevenDay.used + "%", { cls: "num", color: MINT });
+  text(f, x + 296, 118, 20, "7-day limit", { weight: 600 });
+  text(f, x + 296, 144, 18, TODAY.sevenDay.resets, { cls: "muted" });
+
+  rect(d, x, 200, 500, 2, TRACK);
+  text(f, x, 224, 20, "Right now", { cls: "muted" });
+  text(f, x, 254, 30, `${money(TODAY.perHour)} an hour`, { cls: "num", color: ORANGE });
+  text(f, x + 500, 262, 20, `${TODAY.perMin} tokens a minute`, { right: x + 500 });
+
+  rect(d, x, 320, 500, 2, TRACK);
+  text(f, x, 346, 20, "This week", { cls: "muted" });
+  text(f, x + 500, 346, 20, money(S.last_7d), { right: x + 500 });
+  S.projects.slice(0, 3).forEach((p, i) => {
+    const y = 384 + i * 38, w = Math.max(4, Math.round(160 * p.cost / S.projects[0].cost));
+    text(f, x, y, 22, p.name.replace(/^_/, "").replace(/_/g, " ").toLowerCase());
+    rect(d, x + 240, y + 3, 160, 16, TRACK);
+    rect(d, x + 240, y + 3, w, 16, ORANGE);
+    text(f, x + 500, y, 22, money(p.cost), { right: x + 500 });
+  });
+
+  rect(d, x, 512, 500, 2, TRACK);
+  const o = S.openrouter, ox = x + 70, oy = 606;
+  sector(d, ox, oy, 52, 70, 0, 359.99, TRACK);
+  sector(d, ox, oy, 52, 70, 0, 360 * o.remaining / o.total, MINT);
+  text(f, ox, oy - 10, 20, Math.round(100 * o.remaining / o.total) + "%", { center: true, weight: 600 });
+  text(f, x + 170, 544, 20, "OpenRouter credit", { cls: "muted" });
+  text(f, x + 170, 572, 40, money(o.remaining), { cls: "num" });
+  text(f, x + 170, 622, 20, `left of ${money(o.total)}`, { cls: "muted" });
+  text(f, x + 170, 650, 20, `${money(o.key_usage)} spent on this key`, { cls: "muted" });
+})();
+
+/* ---------- C: poster ---------- */
+(function () {
+  const f = document.getElementById("c"), d = svg(f);
+  const INK = "#14143C", YELLOW = "#FFD21F", YELLOW_DARK = "#E3B400", BLUE = "#2D46F5", BLUE_DARK = "#1F33C4", WHITE = "#FFFFFF";
+  rect(d, 0, 0, 800, 548, YELLOW);
+  rect(d, 800, 0, 480, 548, BLUE);
+
+  text(f, 44, 34, 28, "Claude Code", { weight: 700 });
+  text(f, 756, 34, 24, `${money(TODAY.perHour)} an hour right now`, { right: 756 });
+  text(f, 38, 84, 240, money(TODAY.cost), { cls: "huge" });
+  text(f, 44, 340, 28, `spent today, ${TODAY.tokens} tokens`);
+
+  function limit(y, used, label, resets) {
+    rect(d, 44, y, 712, 52, YELLOW_DARK);
+    rect(d, 44, y, Math.round(712 * used / 100), 52, INK);
+    text(f, 60, y + 13, 26, `${label} ${used}%`, { color: YELLOW, weight: 700 });
+    text(f, 740, y + 15, 22, resets, { right: 740 });
+  }
+  limit(404, TODAY.fiveHour.used, "5-hour limit", TODAY.fiveHour.resets);
+  limit(468, TODAY.sevenDay.used, "7-day limit", TODAY.sevenDay.resets);
+
+  const o = S.openrouter;
+  text(f, 836, 34, 28, "OpenRouter", { color: WHITE, weight: 700 });
+  text(f, 832, 96, 190, money(o.remaining), { cls: "huge", color: WHITE });
+  text(f, 836, 290, 28, `credit left of ${money(o.total)}`, { color: WHITE });
+  rect(d, 836, 404, 400, 52, BLUE_DARK);
+  rect(d, 836, 404, Math.round(400 * o.used / o.total), 52, WHITE);
+  text(f, 852, 417, 26, `${Math.round(100 * o.used / o.total)}% used`, { color: BLUE, weight: 700 });
+  text(f, 836, 482, 24, `${money(o.key_usage)} spent on this key`, { color: WHITE });
+
+  text(f, 44, 568, 24, "Last 30 days", { color: WHITE, weight: 700 });
+  text(f, 1236, 568, 24, money(S.last_30d - S.daily[S.daily.length - 1] + TODAY.cost), { color: WHITE, right: 1236 });
+  const peak = Math.max(...daily), step = 1192 / 30;
+  daily.forEach((v, i) => {
+    const h = Math.max(3, Math.round(84 * v / peak));
+    rect(d, 44 + i * step, 696 - h, step - 10, h, i === 29 ? YELLOW : v ? "#9AA2F2" : "#3A3A78");
+  });
+})();
+</script>
+</body>
+</html>
