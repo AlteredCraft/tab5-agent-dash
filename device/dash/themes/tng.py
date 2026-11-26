@@ -216,5 +216,5 @@ def regions():
         Region(216, ROW_TOPS[3] + 70, 548, 32, _week_caption, lambda m: m["month_cost"]),
         Region(790, 250, 474, 200, _hours, lambda m: (_hour_heights(m), m["cur_hour"])),
         Region(790, 470, 474, 190, _projects, lambda m: tuple(m["projects"])),
-        battery(1154, 684, "t_label", BLUE),
+        battery(920, 20, "t_label", PEACH),
     ]
