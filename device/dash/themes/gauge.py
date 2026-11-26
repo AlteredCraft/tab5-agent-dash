@@ -2,6 +2,7 @@
 
 from ..engine import Region
 from ..model import money, tokens
+from ..widgets import battery
 
 NAME = "Gauge glass"
 BACKGROUND = 0xE6EBEA
@@ -169,4 +170,5 @@ def regions():
         Region(926, 550, 330, 62, _credit_number, lambda m: m["or_remaining"] and round(m["or_remaining"] * 100)),
         Region(926, 614, 330, 70, _credit_caption, lambda m: (m["or_remaining"] is None, m["or_total"])),
         Region(1110, 290, 170, 250, _credit_side, lambda m: (m["or_key_usage"], m["or_key_limit"], m["or_used"])),
+        battery(1160, 2, "g_small", MUTED),
     ]

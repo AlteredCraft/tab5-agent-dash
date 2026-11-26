@@ -4,6 +4,7 @@ Text is drawn from the same VLW files and with the same metric rules as the
 device, so layouts match to the pixel.
 """
 
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -64,7 +65,15 @@ class HostSurface:
         a0, a1 = int(a0), int(a1)
         if a1 <= a0:
             return
-        self._note(cx - r1, cy - r1, 2 * r1, 2 * r1, "arc")
+        # Bound the swept segment, not the whole circle: a corner piece may
+        # sit at a region's edge with its circle's centre outside it.
+        points = [
+            (cx + r * math.sin(math.radians(a)), cy - r * math.cos(math.radians(a)))
+            for a in [*range(a0, a1, 5), a1]
+            for r in (r0, r1)
+        ]
+        xs, ys = [p[0] for p in points], [p[1] for p in points]
+        self._note(round(min(xs)), round(min(ys)), round(max(xs) - min(xs)), round(max(ys) - min(ys)), "arc")
         self._draw.arc((cx - r1, cy - r1, cx + r1, cy + r1), a0 - 90, a1 - 90, fill=_rgb(color), width=r1 - r0)
 
     def text_width(self, s, font_key):

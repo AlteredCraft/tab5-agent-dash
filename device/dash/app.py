@@ -47,6 +47,12 @@ def _resolved(url):
     return "%s://%s:%d/%s" % (scheme, address, port, path)
 
 
+def _battery():
+    """Charge percentage while running on the battery, None on external power."""
+    power = M5.Power
+    return None if power.isCharging() else power.getBatteryLevel()
+
+
 def _fetch(url):
     try:
         response = requests.get(url, timeout=FETCH_TIMEOUT_S)
@@ -78,7 +84,7 @@ def run():
     index = _saved_theme()
     engine = Engine(LcdScreen(lcd))
     engine.set_theme(THEMES[index], clock)
-    engine.set_model(model.build(None), clock)
+    engine.set_model(model.build(None, battery=_battery()), clock)
 
     payload = None
     target = None
@@ -114,7 +120,7 @@ def run():
                 target = None
             next_poll = clock + (POLL_MS if fresh else RETRY_MS)
             stale_min = 0 if last_ok is None else (clock - last_ok) // 60000
-            engine.set_model(model.build(payload, stale_min), clock)
+            engine.set_model(model.build(payload, stale_min, _battery()), clock)
 
         animating = engine.frame(clock)
         time.sleep_ms(5 if animating else 40)

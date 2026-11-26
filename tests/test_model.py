@@ -127,6 +127,12 @@ def test_status_text():
     assert model.build(payload(), stale_min=4)["status"] == "No data for 4 min"
 
 
+def test_battery_is_passed_through():
+    assert model.build(payload())["battery"] is None
+    assert model.build(payload(), battery=64)["battery"] == 64
+    assert model.build(None, battery=5)["battery"] == 5
+
+
 def test_build_without_payload():
     m = model.build(None)
     assert m["ok"] is False

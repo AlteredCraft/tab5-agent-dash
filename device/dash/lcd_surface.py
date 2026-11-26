@@ -5,6 +5,7 @@ from .fonts import SCALE, device_path
 
 class LcdCanvas:
     def __init__(self, lcd, w, h):
+        self.w, self.h = w, h
         self._c = lcd.newCanvas(w, h, 16, True)
         self._font = None
 

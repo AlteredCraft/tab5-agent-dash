@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>tab5-agent-dash: an agent usage dashboard for the M5Stack Tab5</title>
-<meta name="description" content="A desk dashboard for Claude Code and OpenRouter usage on the M5Stack Tab5, with three switchable themes.">
+<meta name="description" content="A desk dashboard for Claude Code and OpenRouter usage on the M5Stack Tab5, with four switchable themes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
@@ -46,6 +46,7 @@
   .hero { --bg: #1B1530; --fg: #F3EEFF; --soft: #B7AEDB; --bezel: #0B0817; --mark: #FF9F45; background: var(--bg); color: var(--fg); padding: 28px 0 56px; }
   .hero[data-theme="gauge"] { --bg: #E6EBEA; --fg: #14213D; --soft: #4C5B63; --bezel: #14213D; --mark: #1F4FD8; }
   .hero[data-theme="poster"] { --bg: #FFD21F; --fg: #14143C; --soft: #4A4420; --bezel: #14143C; --mark: #2D46F5; }
+  .hero[data-theme="tng"] { --bg: #000000; --fg: #FFCC99; --soft: #CC99CC; --bezel: #1C1408; --mark: #FF9900; }
   .hero a { color: inherit; }
   .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 56px; font: 600 20px "Barlow Semi Condensed", system-ui, sans-serif; }
   .topbar a { display: inline-flex; align-items: center; gap: 9px; font: 600 16px Figtree, sans-serif; text-decoration: none; border: 2px solid var(--fg); padding: 8px 16px; border-radius: 999px; }
@@ -140,7 +141,7 @@
       </a>
     </nav>
     <h1>Agent spend on a screen beside your keyboard</h1>
-    <p class="lede">This is a token usage display for the <a href="https://docs.m5stack.com/en/core/Tab5">M5Stack Tab5</a>, a 5-inch touchscreen board built on the ESP32-P4. It sits on your desk and shows what your coding agents are costing you: Claude Code and OpenRouter spend today, the 5-hour and 7-day limits, the current burn rate and the credit you have left. It has three themes, written in Python, and you can add your own.</p>
+    <p class="lede">This is a token usage display for the <a href="https://docs.m5stack.com/en/core/Tab5">M5Stack Tab5</a>, a 5-inch touchscreen board built on the ESP32-P4. It sits on your desk and shows what your coding agents are costing you: Claude Code and OpenRouter spend today, the 5-hour and 7-day limits, the current burn rate and the credit you have left. It has four themes, written in Python, and you can add your own.</p>
 
     <div class="viewer" id="viewer">
     <div class="device">
@@ -148,6 +149,7 @@
         <img class="on" src="img/dial.png" alt="Day dial theme: a 24-hour clock face with an orange bar for each hour's spend, limit rings around it, and limits, burn rate, projects and OpenRouter credit listed on the right.">
         <img src="img/gauge.png" alt="Gauge glass theme: three measuring tubes filled to the 5-hour limit, the 7-day limit and the remaining OpenRouter credit, with today's cost in the middle.">
         <img src="img/poster.png" alt="Poster theme: today's cost in very large numerals on a yellow field, OpenRouter credit on a blue field, and thirty daily bars along the bottom.">
+        <img src="img/tng.png" alt="TNG theme: a black starship-console layout with peach, orange, lilac and blue sidebar blocks and elbow frames, today's cost at the top, and segmented bars for the two limits and the OpenRouter credit.">
         <button class="prev" aria-label="Previous theme"></button>
         <button class="next" aria-label="Next theme"></button>
       </div>
@@ -156,6 +158,7 @@
       <button aria-pressed="true">Day dial</button>
       <button aria-pressed="false">Gauge glass</button>
       <button aria-pressed="false">Poster</button>
+      <button aria-pressed="false">TNG</button>
       <span>The themes rotate every six seconds; point at the picture to hold one. On the device, tap the right third of the screen for the next theme and the left third for the previous one. The picture works the same way.</span>
     </div>
     </div>
@@ -186,7 +189,7 @@
         <small>MicroPython on UIFlow2. One engine handles polling, animation and touch; each theme is a single file.</small>
       </div>
     </div>
-    <p style="margin-top:22px">Costs are estimates at API prices, not subscription charges.</p>
+    <p style="margin-top:22px">Costs are estimates at API prices, not subscription charges. When the Tab5 runs on its battery, every theme shows a small charge indicator in a corner.</p>
   </section>
 
   <section id="story">
@@ -333,7 +336,7 @@ def regions():
   const tabs = [...document.querySelectorAll("#tabs button")];
   const hero = document.querySelector(".hero");
   const viewer = document.getElementById("viewer");
-  const names = ["dial", "gauge", "poster"];
+  const names = ["dial", "gauge", "poster", "tng"];
   let current = 0;
   function show(index) {
     current = (index + images.length) % images.length;

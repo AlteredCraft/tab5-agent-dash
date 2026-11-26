@@ -2,6 +2,7 @@
 
 from ..engine import Region
 from ..model import money, tokens
+from ..widgets import battery
 
 NAME = "Poster"
 BACKGROUND = 0x14143C
@@ -123,4 +124,5 @@ def regions():
         Region(800, 84, 480, 216, _openrouter_numeral, lambda m: m["or_remaining"], bg=BLUE),
         Region(800, 300, 480, 248, _openrouter_rest, lambda m: (m["or_remaining"], m["or_total"], m["or_used"], m["or_key_usage"]), bg=BLUE),
         Region(0, 548, 1280, 172, _month, lambda m: (_month_heights(m), m["month_cost"]), bg=INK),
+        battery(1136, 6, "p_mid", WHITE, bg=BLUE),
     ]

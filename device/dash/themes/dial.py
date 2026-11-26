@@ -4,6 +4,7 @@ from math import cos, radians, sin
 
 from ..engine import Region
 from ..model import money, thousands, tokens
+from ..widgets import battery
 
 NAME = "Day dial"
 BACKGROUND = 0x1B1530
@@ -138,4 +139,5 @@ def regions():
         Region(730, 330, 520, 170, _week, lambda m: (m["week_cost"], tuple(m["projects"]))),
         Region(740, 512, 500, 2, rule, bg=TRACK),
         Region(730, 524, 520, 172, _openrouter, lambda m: (m["or_remaining"], m["or_total"], m["or_key_usage"])),
+        battery(1140, 8, "d_small", MUTED),
     ]

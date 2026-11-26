@@ -48,6 +48,8 @@ def variants():
         "extreme values": model.build(extreme),
         "quiet day": model.build(quiet),
         "stale": model.build(full, stale_min=42),
+        "on battery": model.build(full, battery=37),
+        "on a full battery": model.build(full, battery=100),
         "waiting for the Mac": model.build(None),
     }
 

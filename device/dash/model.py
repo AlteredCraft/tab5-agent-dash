@@ -104,8 +104,10 @@ def _status(ok, active_sessions, stale_min):
     return "Idle"
 
 
-def build(payload, stale_min=0):
+def build(payload, stale_min=0, battery=None):
+    """`battery` is the charge percentage while running on battery, else None."""
     m = {
+        "battery": battery,
         "ok": False,
         "today_cost": 0,
         "today_tokens": 0,

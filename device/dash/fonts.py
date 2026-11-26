@@ -35,6 +35,11 @@ FONTS = {
     "p_num150": ("BigShouldersDisplay.ttf", 800, 150, NUM),
     "p_num190": ("BigShouldersDisplay.ttf", 800, 95, NUM),
     "p_num240": ("BigShouldersDisplay.ttf", 800, 120, NUM),
+    # TNG
+    "t_label": ("Antonio.ttf", 600, 24, TEXT),
+    "t_title": ("Antonio.ttf", 700, 44, TEXT),
+    "t_num60": ("Antonio.ttf", 700, 60, NUM),
+    "t_num110": ("Antonio.ttf", 700, 110, NUM),
 }
 
 # The Tab5 restarts when asked to draw glyphs much taller than 150 px, so

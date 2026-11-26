@@ -30,7 +30,7 @@ Sources:
 
 ## Device app
 
-The Tab5 runs UIFlow2 v2.5.5 (MicroPython 1.27). The app in `device/` polls the collector every 5 seconds and draws one of three themes. Tap the right third of the screen for the next theme and the left third for the previous one; the choice is kept across restarts.
+The Tab5 runs UIFlow2 v2.5.5 (MicroPython 1.27). The app in `device/` polls the collector every 5 seconds and draws one of four themes. Tap the right third of the screen for the next theme and the left third for the previous one; the choice is kept across restarts.
 
 ```sh
 make firmware                # once per device: install UIFlow2 (replaces everything on the Tab5)
@@ -43,6 +43,8 @@ make provision WIFI=FILE     # set Wi-Fi and the collector URL, then start
 `WIFI` names a file with `WIFI_NAME` and `WIFI_PASSWORD`. They are stored in plain text on the device at `/flash/dash/config.json`. The collector URL defaults to this Mac's `.local` name; override it with `URL=`.
 
 `make deploy` copies files without restarting. It interrupts the running app to reach the REPL, so the dashboard stays stopped until `make start`.
+
+While the Tab5 runs on its battery, every theme shows a small battery outline and charge percentage. It disappears on external power. The reading is `M5.Power.getBatteryLevel()`, shown whenever `isCharging()` is false, so a full battery on USB may also show it.
 
 ### Themes
 
@@ -90,7 +92,7 @@ UIFlow2 drops USB on a soft reset and prints from background timers, which break
 
 ## Design concepts
 
-`mockups/concepts.html` holds the original browser mockups of the three themes.
+`mockups/concepts.html` holds the original browser mockups of the first three themes.
 
 ## License
 
