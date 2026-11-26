@@ -7,6 +7,13 @@ from ..widgets import battery
 NAME = "TNG"
 BACKGROUND = 0x000000
 ANIMATE = ("today_cost", "five_hour", "seven_day")
+# A console chirp: three quick rising blips.
+SOUND = (
+    (0, 70, 1180, 1400, "sine", 45),
+    (80, 70, 1560, 1760, "sine", 45),
+    (160, 160, 2090, 2350, "sine", 40),
+    (160, 160, 1045, 1175, "triangle", 15),
+)
 
 BLACK = 0x000000
 ORANGE = 0xFF9900

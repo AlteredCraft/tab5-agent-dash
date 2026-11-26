@@ -8,7 +8,7 @@ import M5
 import network
 import requests
 
-from . import model
+from . import model, sound
 from .engine import Engine
 from .lcd_surface import LcdScreen
 from .themes import THEMES
@@ -31,6 +31,15 @@ def _saved_theme():
 def _save_theme(index):
     with open(THEME_PATH, "w") as f:
         f.write(str(index))
+
+
+def _chime(theme):
+    """Play the theme's selection sound. A missing or busy speaker must not stop the
+    dashboard, so failures are only reported on the console."""
+    try:
+        M5.Speaker.playWav(sound.for_theme(theme))
+    except Exception as error:
+        print("sound:", error)
 
 
 def _resolved(url):
@@ -104,6 +113,7 @@ def run():
             step = 1 if x > width * 2 // 3 else -1 if x < width // 3 else 0
             if step:
                 index = (index + step) % len(THEMES)
+                _chime(THEMES[index])
                 engine.set_theme(THEMES[index], clock)
                 _save_theme(index)
         touching = touched

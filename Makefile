@@ -64,14 +64,14 @@ $(FONT_STAMP): $(FONT_INPUTS)
 
 fonts: $(FONT_STAMP) ## Render fonts/ to the bitmap fonts the device loads (rebuilds only when inputs change)
 
-preview: $(FONT_STAMP) ## Draw every theme to previews/*.png with sample data, using the device's own code
+preview: $(FONT_STAMP) ## Draw every theme to previews/*.png and its selection sound to *.wav, using the device's own code
 	$(PY) -m tools.preview $(ARGS)
 
 preview-live: $(FONT_STAMP) ## Draw every theme with live data (needs `make serve` running)
 	$(PY) -m tools.preview --url http://127.0.0.1:$(COLLECTOR_PORT)/usage.json $(ARGS)
 
 docs: $(FONT_STAMP) ## Regenerate the theme images used by the guide in docs/ (sample data only)
-	$(PY) -m tools.preview --out docs/img --regions --battery 72
+	$(PY) -m tools.preview --out docs/img --regions --battery 72 --no-sound
 
 # --- Tab5 ---
 

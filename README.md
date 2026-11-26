@@ -30,11 +30,11 @@ Sources:
 
 ## Device app
 
-The Tab5 runs UIFlow2 v2.5.5 (MicroPython 1.27). The app in `device/` polls the collector every 5 seconds and draws one of four themes. Tap the right third of the screen for the next theme and the left third for the previous one; the choice is kept across restarts.
+The Tab5 runs UIFlow2 v2.5.5 (MicroPython 1.27). The app in `device/` polls the collector every 5 seconds and draws one of four themes. Tap the right third of the screen for the next theme and the left third for the previous one; the choice is kept across restarts. Each theme plays a short sound of its own when selected.
 
 ```sh
 make firmware                # once per device: install UIFlow2 (replaces everything on the Tab5)
-make preview                 # draw every theme to previews/*.png with sample data
+make preview                 # draw every theme to previews/*.png with sample data, and its sound to *.wav
 make preview-live            # the same with live data from a running collector
 make start                   # copy changed files to the Tab5 over USB and restart the dashboard
 make provision WIFI=FILE     # set Wi-Fi and the collector URL, then start
@@ -53,6 +53,7 @@ A theme is a module in `device/dash/themes/` listed in `themes/__init__.py`. It 
 - `NAME` and `BACKGROUND`.
 - `regions()`: a list of `Region(x, y, w, h, draw, key, bg)`. `draw(surface, m)` paints the region in its own coordinates. `key(m)` returns the values the region depends on; the engine redraws a region only when its key changes.
 - `ANIMATE`: model fields the engine eases toward new values (and up from zero when the theme appears).
+- `SOUND`: the notes played when the theme is selected, each `(start_ms, length_ms, from_hz, to_hz, wave, level)`. `device/dash/sound.py` mixes them into a WAV on first use and the device plays it with `M5.Speaker.playWav`; `make preview` writes the same WAV next to each image.
 
 `m` is the dict built by `device/dash/model.py`. The surface offers `fill`, `rect`, `arc`, `text` and `text_width`. `tools/host_surface.py` implements the same surface with Pillow from the same font files, so previews and the tests in `tests/test_themes.py` match the device; text widths were checked to be identical on both.
 

@@ -7,6 +7,14 @@ from ..widgets import battery
 NAME = "Poster"
 BACKGROUND = 0x14143C
 ANIMATE = ("today_cost", "five_hour", "seven_day")
+# A punchy pop, then a bright two-note stab.
+SOUND = (
+    (0, 70, 900, 140, "square", 22),
+    (0, 20, 0, 0, "noise", 25),
+    (90, 120, 523, 523, "triangle", 55),
+    (200, 260, 784, 784, "triangle", 55),
+    (200, 260, 1046, 1046, "triangle", 25),
+)
 
 INK = 0x14143C
 YELLOW = 0xFFD21F

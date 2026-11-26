@@ -7,6 +7,12 @@ from ..widgets import battery
 NAME = "Gauge glass"
 BACKGROUND = 0xE6EBEA
 ANIMATE = ("five_hour", "seven_day", "or_remaining", "today_cost")
+# A liquid bloop rising up the tube, then a glass clink (two inharmonic partials).
+SOUND = (
+    (0, 110, 260, 820, "sine", 55),
+    (100, 420, 2350, 2350, "sine", 40),
+    (100, 300, 6110, 6110, "sine", 14),
+)
 
 INK = 0x14213D
 COBALT = 0x1F4FD8

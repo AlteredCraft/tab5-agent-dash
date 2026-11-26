@@ -1,4 +1,4 @@
-"""Render every theme to PNG on the Mac, using the same code the device runs.
+"""Render every theme to PNG, and its selection sound to WAV, using the same code the device runs.
 
     uv run python -m tools.preview                     # sample data, into previews/
     uv run python -m tools.preview --url http://127.0.0.1:8787/usage.json
@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "device"))
 
-from dash import model  # noqa: E402
+from dash import model, sound  # noqa: E402
 from dash.engine import EASE_MS, Engine  # noqa: E402
 from dash.themes import THEMES  # noqa: E402
 
@@ -85,6 +85,7 @@ def main():
     parser.add_argument("--out", type=Path, default=ROOT / "previews")
     parser.add_argument("--regions", action="store_true", help="also save <theme>-regions.png with region outlines")
     parser.add_argument("--battery", type=int, help="draw the on-battery indicator at this charge percentage")
+    parser.add_argument("--no-sound", action="store_true", help="skip writing <theme>.wav")
     args = parser.parse_args()
     if args.url:
         with urllib.request.urlopen(args.url, timeout=10) as response:
@@ -99,6 +100,8 @@ def main():
         if args.regions:
             outline_regions(theme, image).save(path.with_name(path.stem + "-regions.png"))
         print(path, *overflow, sep="\n  ")
+        if not args.no_sound:
+            path.with_suffix(".wav").write_bytes(sound.wav(theme.SOUND))
 
 
 if __name__ == "__main__":
