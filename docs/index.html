@@ -10,79 +10,104 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #E6EBEA;
-    --panel: #F7FAF9;
-    --ink: #14213D;
-    --muted: #55636B;
-    --line: #B9C4C8;
-    --cobalt: #1F4FD8;
-    --amber: #F2A20C;
+    --paper: #F6F7FB;
+    --panel: #FFFFFF;
+    --ink: #14143C;
+    --muted: #5A5F7A;
+    --line: #D5D8E6;
+    --indigo: #1B1530;
+    --cobalt: #2D46F5;
+    --orange: #FF9F45;
+    --pink: #FF5D8F;
+    --mint: #6EE7C5;
+    --yellow: #FFD21F;
+    --accent: var(--cobalt);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body { background: var(--paper); color: var(--ink); font: 17px/1.55 Figtree, system-ui, sans-serif; }
-  main { max-width: 1040px; margin: 0 auto; padding: 56px 24px 96px; }
+  .wrap, main { max-width: 1088px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+  main { padding-bottom: 72px; }
   h1, h2, h3 { font-family: "Barlow Semi Condensed", system-ui, sans-serif; font-weight: 600; line-height: 1.1; }
-  h1 { font-size: clamp(40px, 7vw, 68px); max-width: 16ch; }
-  h2 { font-size: 34px; margin-bottom: 14px; }
+  h1 { font-size: clamp(44px, 7.4vw, 84px); max-width: 15ch; letter-spacing: -0.01em; }
+  h2 { font-size: clamp(34px, 4.4vw, 46px); margin-bottom: 14px; }
   h3 { font-size: 22px; margin-bottom: 6px; }
   p { max-width: 66ch; }
-  section { margin-top: 88px; }
+  section { margin-top: 104px; }
   a { color: var(--cobalt); }
   code { font: 0.88em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
-  p code, li code, td code { background: var(--panel); padding: 1px 5px; border-radius: 3px; }
-  pre { background: var(--ink); color: #E6EBEA; padding: 16px 20px; overflow-x: auto; border-radius: 4px; }
-  pre .c { color: #8FA0B8; }
-  .lede { font-size: 21px; margin-top: 20px; color: var(--muted); }
+  p code, li code, td code { background: #E9ECFB; color: var(--ink); padding: 1px 6px; border-radius: 4px; }
+  pre { background: var(--indigo); color: #F3EEFF; padding: 18px 22px; overflow-x: auto; border-radius: 8px; border-left: 6px solid var(--accent); }
+  pre .c { color: #9D93BF; }
   img { display: block; max-width: 100%; height: auto; }
-  :focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+  :focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 
-  /* Theme viewer: a bezel around the screen, switched like the device */
-  .device { margin-top: 44px; background: #0E1626; padding: clamp(10px, 2.2vw, 26px); border-radius: clamp(10px, 2vw, 22px); position: relative; }
-  .screen { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
+  /* Hero: takes the colours of whichever theme is showing */
+  .hero { --bg: #1B1530; --fg: #F3EEFF; --soft: #B7AEDB; --bezel: #0B0817; --mark: #FF9F45; background: var(--bg); color: var(--fg); padding: 72px 0 56px; }
+  .hero[data-theme="gauge"] { --bg: #E6EBEA; --fg: #14213D; --soft: #4C5B63; --bezel: #14213D; --mark: #1F4FD8; }
+  .hero[data-theme="poster"] { --bg: #FFD21F; --fg: #14143C; --soft: #4A4420; --bezel: #14143C; --mark: #2D46F5; }
+  .hero a { color: inherit; }
+  .lede { font-size: clamp(18px, 2vw, 22px); margin-top: 22px; color: var(--soft); }
+  .device { margin-top: 48px; background: var(--bezel); padding: clamp(10px, 2.2vw, 28px); border-radius: clamp(12px, 2.4vw, 28px); box-shadow: 0 40px 70px -36px rgba(0, 0, 0, 0.65); }
+  .screen { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #000; border-radius: 3px; }
   .screen img { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
   .screen img.on { opacity: 1; }
   .screen button { position: absolute; top: 0; bottom: 0; width: 33.34%; background: none; border: 0; cursor: pointer; }
   .screen button.prev { left: 0; }
   .screen button.next { right: 0; }
-  .viewer-bar { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-top: 16px; }
-  .viewer-bar button { font: 600 16px Figtree, sans-serif; color: var(--ink); background: var(--panel); border: 2px solid var(--ink); padding: 7px 14px; border-radius: 3px; cursor: pointer; }
-  .viewer-bar button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
-  .viewer-bar span { color: var(--muted); font-size: 15px; margin-left: 4px; }
+  .viewer-bar { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; margin-top: 22px; }
+  .viewer-bar button { position: relative; overflow: hidden; font: 600 17px Figtree, sans-serif; color: var(--fg); background: transparent; border: 2px solid var(--fg); padding: 9px 18px 11px; border-radius: 999px; cursor: pointer; }
+  .viewer-bar button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .viewer-bar span { color: var(--soft); font-size: 15px; flex: 1 1 320px; }
 
   /* Data flow */
-  .flow { display: grid; grid-template-columns: 1.15fr auto 1fr auto 1fr; gap: 14px; align-items: stretch; margin-top: 28px; }
-  .box { background: var(--panel); border: 2px solid var(--ink); padding: 16px 18px; border-radius: 4px; }
+  .flow { display: grid; grid-template-columns: 1.15fr auto 1fr auto 1fr; gap: 14px; align-items: stretch; margin-top: 32px; }
+  .box { background: var(--panel); padding: 20px 22px; border-radius: 12px; box-shadow: 0 1px 0 var(--line), 0 14px 30px -22px rgba(20, 20, 60, 0.45); }
   .box small { display: block; color: var(--muted); font-size: 14.5px; line-height: 1.4; margin-top: 4px; }
-  .box ul { list-style: none; margin-top: 10px; }
-  .box li { border-top: 1px solid var(--line); padding: 8px 0 6px; font-weight: 600; }
+  .box ul { list-style: none; margin-top: 12px; }
+  .box li { border-top: 1px solid var(--line); padding: 9px 0 7px 18px; font-weight: 600; position: relative; }
+  .box li::before { content: ""; position: absolute; left: 0; top: 17px; width: 9px; height: 9px; border-radius: 50%; background: var(--orange); }
+  .box li:nth-child(2)::before { background: var(--pink); }
+  .box li:nth-child(3)::before { background: var(--mint); }
   .box li small { font-weight: 400; margin-top: 1px; }
-  .box.device-box { background: var(--ink); color: var(--panel); }
-  .box.device-box small { color: #A9B6C9; }
+  .box.collector { background: var(--cobalt); color: #fff; }
+  .box.collector small { color: #D6DCFF; }
+  .box.collector code { background: rgba(255, 255, 255, 0.18); color: #fff; padding: 1px 6px; border-radius: 4px; }
+  .box.device-box { background: var(--indigo); color: #F3EEFF; }
+  .box.device-box h3 { color: var(--orange); }
+  .box.device-box small { color: #B7AEDB; }
   .arrow { align-self: center; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.3; }
-  .arrow b { display: block; font-size: 30px; color: var(--ink); line-height: 1; }
+  .arrow b { display: block; font-size: 32px; color: var(--ink); line-height: 1; }
 
-  .steps { list-style: none; counter-reset: step; margin-top: 24px; display: grid; gap: 22px; }
-  .steps > li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 0 16px; }
-  .steps > li::before { content: counter(step); font: 600 26px "Barlow Semi Condensed", sans-serif; width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 50%; }
+  .steps { list-style: none; counter-reset: step; margin-top: 28px; display: grid; gap: 26px; }
+  .steps > li { counter-increment: step; display: grid; grid-template-columns: 48px 1fr; gap: 0 18px; }
+  .steps > li::before { content: counter(step); font: 600 26px "Barlow Semi Condensed", sans-serif; width: 48px; height: 48px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink, #fff); border-radius: 50%; }
   .steps > li > div { min-width: 0; }
+  .steps h3 { margin-top: 9px; }
   .steps p { margin-bottom: 10px; }
+  #story { --accent: var(--pink); --accent-ink: #2A0B18; }
+  #start { --accent: var(--cobalt); }
+  #themes { --accent: var(--orange); }
 
-  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-weight: 600; border-bottom: 2px solid var(--ink); }
-  td:first-child { white-space: nowrap; }
+  table { border-collapse: collapse; width: 100%; margin-top: 22px; background: var(--panel); border-radius: 12px; overflow: hidden; box-shadow: 0 14px 30px -22px rgba(20, 20, 60, 0.45); }
+  th, td { text-align: left; padding: 12px 18px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th { font-weight: 600; background: var(--ink); color: #fff; border-bottom: 0; }
+  td:first-child { white-space: nowrap; font-weight: 600; }
   #story td:first-child { white-space: normal; width: 30%; }
-  .steps h3 { margin-top: 6px; }
 
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; margin-top: 24px; }
-  .split figure img { border: 2px solid var(--ink); }
-  figcaption { color: var(--muted); font-size: 15px; margin-top: 8px; }
-  .limits { margin-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  .limits div { background: var(--panel); border-top: 4px solid var(--cobalt); padding: 14px 16px; }
-  .limits b { font: 600 30px "Barlow Semi Condensed", sans-serif; display: block; line-height: 1.1; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; margin-top: 28px; }
+  .split figure img { border-radius: 8px; box-shadow: 0 18px 36px -22px rgba(20, 20, 60, 0.6); }
+  figcaption { color: var(--muted); font-size: 15px; margin-top: 10px; }
+  .limits { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .limits div { background: var(--panel); border-top: 8px solid var(--orange); padding: 16px 20px 18px; border-radius: 12px; box-shadow: 0 14px 30px -22px rgba(20, 20, 60, 0.45); }
+  .limits div:nth-child(2) { border-top-color: var(--pink); }
+  .limits div:nth-child(3) { border-top-color: var(--mint); }
+  .limits b { font: 600 30px "Barlow Semi Condensed", sans-serif; display: block; line-height: 1.1; margin-bottom: 4px; }
   .limits span { color: var(--muted); font-size: 15px; }
-  footer { margin-top: 88px; color: var(--muted); font-size: 15px; border-top: 1px solid var(--line); padding-top: 18px; }
+  footer { margin-top: 104px; background: var(--indigo); color: #B7AEDB; font-size: 15px; padding: 28px 0; }
+  footer a { color: var(--mint); }
+  footer code { background: rgba(255, 255, 255, 0.12); color: #F3EEFF; padding: 1px 6px; border-radius: 4px; }
 
   @media (max-width: 760px) {
     .flow { grid-template-columns: 1fr; }
@@ -91,16 +116,23 @@
     td:first-child { white-space: normal; }
   }
   @media (prefers-reduced-motion: no-preference) {
-    .screen img { transition: opacity 0.25s; }
+    .hero { transition: background-color 0.6s, color 0.6s; }
+    .device { transition: background-color 0.6s; }
+    .screen img { transition: opacity 0.6s; }
+    /* The bar under the active theme's button is the carousel's timer. */
+    .viewer-bar button[aria-pressed="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--mark); transform-origin: left; animation: hold 6s linear forwards; }
+    .viewer.paused .viewer-bar button::after { animation-play-state: paused; }
   }
+  @keyframes hold { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 </style>
 </head>
 <body>
-<main>
-  <header>
+<header class="hero" data-theme="dial">
+  <div class="wrap">
     <h1>Agent spend on a screen beside your keyboard</h1>
     <p class="lede">This is a token usage display for the <a href="https://docs.m5stack.com/en/core/Tab5">M5Stack Tab5</a>, a 5-inch touchscreen board built on the ESP32-P4. It sits on your desk and shows what your coding agents are costing you: Claude Code and OpenRouter spend today, the 5-hour and 7-day limits, the current burn rate and the credit you have left. It has three themes, written in Python, and you can add your own.</p>
 
+    <div class="viewer" id="viewer">
     <div class="device">
       <div class="screen" id="screen">
         <img class="on" src="img/dial.png" alt="Day dial theme: a 24-hour clock face with an orange bar for each hour's spend, limit rings around it, and limits, burn rate, projects and OpenRouter credit listed on the right.">
@@ -114,9 +146,12 @@
       <button aria-pressed="true">Day dial</button>
       <button aria-pressed="false">Gauge glass</button>
       <button aria-pressed="false">Poster</button>
-      <span>On the device, tap the right third of the screen for the next theme and the left third for the previous one. The picture works the same way.</span>
+      <span>The themes rotate every six seconds; point at the picture to hold one. On the device, tap the right third of the screen for the next theme and the left third for the previous one. The picture works the same way.</span>
     </div>
-  </header>
+    </div>
+  </div>
+</header>
+<main>
 
   <section id="how">
     <h2>How it works</h2>
@@ -131,7 +166,7 @@
         </ul>
       </div>
       <div class="arrow"><b>&rarr;</b></div>
-      <div class="box">
+      <div class="box collector">
         <h3>Collector</h3>
         <small>Python, standard library only. Serves <code>/usage.json</code> on port 8787 and keeps API keys off the device.</small>
       </div>
@@ -280,18 +315,31 @@ def regions():
     </div>
   </section>
 
-  <footer><a href="https://github.com/AlteredCraft/tab5-agent-dash">Source on GitHub</a>. Theme images on this page are drawn from sample data by <code>make docs</code>. Fonts are under the SIL Open Font License.</footer>
 </main>
+<footer><div class="wrap"><a href="https://github.com/AlteredCraft/tab5-agent-dash">Source on GitHub</a>, released under the <a href="https://github.com/AlteredCraft/tab5-agent-dash/blob/main/LICENSE">MIT License</a>. Theme images on this page are drawn from sample data by <code>make docs</code>. Fonts are under the SIL Open Font License.</div></footer>
 
 <script>
   const images = [...document.querySelectorAll("#screen img")];
   const tabs = [...document.querySelectorAll("#tabs button")];
+  const hero = document.querySelector(".hero");
+  const viewer = document.getElementById("viewer");
+  const names = ["dial", "gauge", "poster"];
   let current = 0;
   function show(index) {
     current = (index + images.length) % images.length;
     images.forEach((image, i) => image.classList.toggle("on", i === current));
     tabs.forEach((tab, i) => tab.setAttribute("aria-pressed", i === current));
+    hero.dataset.theme = names[current];
   }
+  // The timer bar under the active button drives the carousel: when its
+  // animation ends, the next theme shows. Pausing the animation pauses both,
+  // and with reduced motion there is no animation, so nothing rotates.
+  tabs.forEach((tab) => tab.addEventListener("animationend", () => show(current + 1)));
+  const hold = (on) => () => viewer.classList.toggle("paused", on);
+  viewer.addEventListener("mouseenter", hold(true));
+  viewer.addEventListener("mouseleave", hold(false));
+  viewer.addEventListener("focusin", hold(true));
+  viewer.addEventListener("focusout", hold(false));
   tabs.forEach((tab, i) => tab.addEventListener("click", () => show(i)));
   document.querySelector("#screen .prev").addEventListener("click", () => show(current - 1));
   document.querySelector("#screen .next").addEventListener("click", () => show(current + 1));

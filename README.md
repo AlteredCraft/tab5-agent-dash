@@ -91,3 +91,7 @@ UIFlow2 drops USB on a soft reset and prints from background timers, which break
 ## Design concepts
 
 `mockups/concepts.html` holds the original browser mockups of the three themes.
+
+## License
+
+[MIT](LICENSE). The fonts in `fonts/` are under the SIL Open Font License; see `fonts/licenses/`.
