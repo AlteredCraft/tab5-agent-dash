@@ -2,7 +2,7 @@
 
     uv run python -m tools.preview                     # sample data, into previews/
     uv run python -m tools.preview --url http://127.0.0.1:8787/usage.json
-    uv run python -m tools.preview --out docs/img --regions   # images for the guide
+    uv run python -m tools.preview --out docs/img --regions --battery 72   # images for the guide
 """
 
 import argparse
@@ -84,6 +84,7 @@ def main():
     parser.add_argument("--url", help="collector URL to render live data from")
     parser.add_argument("--out", type=Path, default=ROOT / "previews")
     parser.add_argument("--regions", action="store_true", help="also save <theme>-regions.png with region outlines")
+    parser.add_argument("--battery", type=int, help="draw the on-battery indicator at this charge percentage")
     args = parser.parse_args()
     if args.url:
         with urllib.request.urlopen(args.url, timeout=10) as response:
@@ -92,7 +93,7 @@ def main():
         payload = sample_payload()
     args.out.mkdir(parents=True, exist_ok=True)
     for theme in THEMES:
-        image, overflow = render(theme, model.build(payload))
+        image, overflow = render(theme, model.build(payload, battery=args.battery))
         path = args.out / (theme.__name__.split(".")[-1] + ".png")
         image.save(path)
         if args.regions:

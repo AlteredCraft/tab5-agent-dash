@@ -71,7 +71,7 @@ preview-live: $(FONT_STAMP) ## Draw every theme with live data (needs `make serv
 	$(PY) -m tools.preview --url http://127.0.0.1:$(COLLECTOR_PORT)/usage.json $(ARGS)
 
 docs: $(FONT_STAMP) ## Regenerate the theme images used by the guide in docs/ (sample data only)
-	$(PY) -m tools.preview --out docs/img --regions
+	$(PY) -m tools.preview --out docs/img --regions --battery 72
 
 # --- Tab5 ---
 

@@ -295,7 +295,7 @@ make</pre>
     <p>A theme is a module in <code>device/dash/themes/</code> that divides the screen into regions. Each region has a draw function and a key: the values it depends on. The engine redraws a region only when its key changes, and eases the fields named in <code>ANIMATE</code> toward new values.</p>
     <div class="split">
       <figure>
-        <img src="img/dial-regions.png" alt="The Day dial theme with each of its nine regions outlined: the dial, the centre numeral and its caption, the limits, the burn rate, the weekly projects, the OpenRouter credit and three divider lines.">
+        <img src="img/dial-regions.png" alt="The Day dial theme with each of its regions outlined: the dial, the centre numeral and its caption, the limits, the burn rate, the weekly projects, the OpenRouter credit, three divider lines and the battery indicator.">
         <figcaption>Day dial's regions. A new figure for today's cost redraws only the small box in the centre of the dial.</figcaption>
       </figure>
 <pre><span class="c"># device/dash/themes/minimal.py</span>
