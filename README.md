@@ -30,11 +30,11 @@ Sources:
 
 ## Device app
 
-The Tab5 runs UIFlow2 v2.5.5 (MicroPython 1.27). The app in `device/` polls the collector every 5 seconds and draws one of four themes. Tap the right third of the screen for the next theme and the left third for the previous one; the choice is kept across restarts. Each theme plays a short sound of its own when selected.
+The Tab5 runs UIFlow2 v2.5.5 (MicroPython 1.27). The app in `device/` polls the collector every 5 seconds and draws one of four themes. Tap the right third of the screen for the next theme and the left third for the previous one; the choice is kept across restarts. Each theme plays a short sound of its own when selected. Double-tap the middle of the screen for settings: speaker volume in 10% steps (each step plays the current theme's sound at the new level) and mute. They are kept in `/flash/dash/settings.json`; volume starts at 50%. Tap Done, or double-tap outside the buttons, to go back.
 
 ```sh
 make firmware                # once per device: install UIFlow2 (replaces everything on the Tab5)
-make preview                 # draw every theme to previews/*.png with sample data, and its sound to *.wav
+make preview                 # draw every theme and the settings screen to previews/*.png, and each theme's sound to *.wav
 make preview-live            # the same with live data from a running collector
 make start                   # copy changed files to the Tab5 over USB and restart the dashboard
 make provision WIFI=FILE     # set Wi-Fi and the collector URL, then start

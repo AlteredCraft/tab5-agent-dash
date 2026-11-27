@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "device"))
 
-from dash import model, sound  # noqa: E402
+from dash import model, settings, sound  # noqa: E402
 from dash.engine import EASE_MS, Engine  # noqa: E402
 from dash.themes import THEMES  # noqa: E402
 
@@ -102,6 +102,10 @@ def main():
         print(path, *overflow, sep="\n  ")
         if not args.no_sound:
             path.with_suffix(".wav").write_bytes(sound.wav(theme.SOUND))
+    image, overflow = render(settings, settings.view(settings.DEFAULTS, args.battery))
+    path = args.out / "settings.png"
+    image.save(path)
+    print(path, *overflow, sep="\n  ")
 
 
 if __name__ == "__main__":

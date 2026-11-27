@@ -8,13 +8,15 @@ import M5
 import network
 import requests
 
-from . import model, sound
+from . import model, settings, sound
 from .engine import Engine
+from .gestures import DoubleTap
 from .lcd_surface import LcdScreen
 from .themes import THEMES
 
 CONFIG_PATH = "/flash/dash/config.json"
 THEME_PATH = "/flash/dash/theme.txt"
+SETTINGS_PATH = "/flash/dash/settings.json"
 POLL_MS = 5000
 RETRY_MS = 15000
 FETCH_TIMEOUT_S = 3
@@ -33,13 +35,25 @@ def _save_theme(index):
         f.write(str(index))
 
 
-def _chime(theme):
-    """Play the theme's selection sound. A missing or busy speaker must not stop the
-    dashboard, so failures are only reported on the console."""
+# A missing or busy speaker must not stop the dashboard, so speaker failures are
+# only reported on the console.
+
+
+def _chime(theme, values):
+    """Play the theme's selection sound, unless muted."""
+    if not settings.audible(values):
+        return
     try:
         M5.Speaker.playWav(sound.for_theme(theme))
     except Exception as error:
         print("sound:", error)
+
+
+def _apply_volume(values):
+    try:
+        M5.Speaker.setVolume(settings.speaker_volume(values))
+    except Exception as error:
+        print("volume:", error)
 
 
 def _resolved(url):
@@ -90,10 +104,17 @@ def run():
     clock = 0
     last_ticks = time.ticks_ms()
 
+    values = settings.load(SETTINGS_PATH)
+    _apply_volume(values)
+    double_tap = DoubleTap()
+    in_settings = False
+
     index = _saved_theme()
+    battery = _battery()
+    view = model.build(None, battery=battery)
     engine = Engine(LcdScreen(lcd))
     engine.set_theme(THEMES[index], clock)
-    engine.set_model(model.build(None, battery=_battery()), clock)
+    engine.set_model(view, clock)
 
     payload = None
     target = None
@@ -109,13 +130,34 @@ def run():
 
         touched = M5.Touch.getCount() > 0
         if touched and not touching:
-            x = M5.Touch.getX()
-            step = 1 if x > width * 2 // 3 else -1 if x < width // 3 else 0
-            if step:
-                index = (index + step) % len(THEMES)
-                _chime(THEMES[index])
-                engine.set_theme(THEMES[index], clock)
-                _save_theme(index)
+            x, y = M5.Touch.getX(), M5.Touch.getY()
+            if in_settings:
+                button = settings.hit(x, y)
+                if button == "done" or (button is None and double_tap.press(x, y, clock)):
+                    in_settings = False
+                    double_tap.reset()
+                    engine.set_theme(THEMES[index], clock)
+                    engine.set_model(view, clock)
+                elif button:
+                    values = settings.adjust(values, button)
+                    _apply_volume(values)
+                    settings.save(SETTINGS_PATH, values)
+                    # Let the new level be heard.
+                    _chime(THEMES[index], values)
+                    engine.set_model(settings.view(values, battery), clock)
+            else:
+                # The outer thirds switch themes; a double tap in the middle opens settings.
+                step = 1 if x > width * 2 // 3 else -1 if x < width // 3 else 0
+                if step:
+                    double_tap.reset()
+                    index = (index + step) % len(THEMES)
+                    _chime(THEMES[index], values)
+                    engine.set_theme(THEMES[index], clock)
+                    _save_theme(index)
+                elif double_tap.press(x, y, clock):
+                    in_settings = True
+                    engine.set_theme(settings, clock)
+                    engine.set_model(settings.view(values, battery), clock)
         touching = touched
 
         if clock >= next_poll:
@@ -130,7 +172,9 @@ def run():
                 target = None
             next_poll = clock + (POLL_MS if fresh else RETRY_MS)
             stale_min = 0 if last_ok is None else (clock - last_ok) // 60000
-            engine.set_model(model.build(payload, stale_min, _battery()), clock)
+            battery = _battery()
+            view = model.build(payload, stale_min, battery)
+            engine.set_model(settings.view(values, battery) if in_settings else view, clock)
 
         animating = engine.frame(clock)
         time.sleep_ms(5 if animating else 40)

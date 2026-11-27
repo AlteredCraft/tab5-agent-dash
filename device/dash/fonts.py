@@ -40,6 +40,9 @@ FONTS = {
     "t_title": ("Antonio.ttf", 700, 44, TEXT),
     "t_num60": ("Antonio.ttf", 700, 60, NUM),
     "t_num110": ("Antonio.ttf", 700, 110, NUM),
+    # Settings
+    "s_title": ("BarlowSemiCondensed-SemiBold.ttf", None, 44, TEXT),
+    "s_button": ("BarlowSemiCondensed-SemiBold.ttf", None, 36, TEXT),
 }
 
 # The Tab5 restarts when asked to draw glyphs much taller than 150 px, so
