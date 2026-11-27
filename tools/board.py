@@ -6,7 +6,9 @@ resets and ignores stray output.
 """
 
 import binascii
+import os
 import time
+import urllib.request
 
 import serial
 
@@ -17,18 +19,64 @@ class BoardError(Exception):
     pass
 
 
+def ask_over_wifi(action, collector_port=8787):
+    """Ask the running collector to pass "restart" or "off" to the Tab5 on its
+    next poll. Returns False when no collector is running here."""
+    request = urllib.request.Request("http://127.0.0.1:%d/control/%s" % (collector_port, action), method="POST")
+    try:
+        urllib.request.urlopen(request, timeout=3).close()
+        return True
+    except OSError:
+        return False
+
+
 class Board:
-    def __init__(self, port):
-        self._conn = serial.Serial(port, 115200, timeout=0.1)
+    QUIET = 0.6
+
+    def __init__(self, port, wait=30, open_serial=serial.Serial):
+        """Connect and enter the raw REPL, retrying for `wait` seconds: the
+        Tab5 ignores the interrupt while it starts up, and its USB port comes
+        and goes around a restart."""
+        if open_serial is serial.Serial and not os.path.exists(port):
+            raise BoardError("There is no serial port %s. `make ports` lists the ones the Mac can see." % port)
+        deadline = time.time() + wait
+        self._conn = None
+        while True:
+            try:
+                if self._conn is None:
+                    self._conn = open_serial(port, 115200, timeout=0.1)
+                if self._enter_raw_repl():
+                    return
+            except (serial.SerialException, OSError):
+                self._drop()
+            if time.time() >= deadline:
+                self._drop()
+                raise BoardError(
+                    "The Tab5 on %s did not answer within %d seconds.\n"
+                    "  - Press the reset button on the Tab5, or switch it off and on, with USB connected.\n"
+                    "  - Close any other program using the port (a serial monitor, the UIFlow web editor).\n"
+                    "  - Check `make ports`: with several boards attached, pass PORT=..." % (port, wait)
+                )
+            time.sleep(1)
+
+    def _enter_raw_repl(self):
         self._conn.write(b"\r\x03")
         time.sleep(0.3)
         self._conn.write(b"\x03")
         self._drain()
         self._conn.write(b"\r\x01")
-        if b"raw REPL" not in self._drain():
-            raise BoardError("the board did not enter the raw REPL; it may still be starting up")
+        return b"raw REPL" in self._drain()
 
-    def _drain(self, quiet=0.6, limit=15):
+    def _drop(self):
+        if self._conn is not None:
+            try:
+                self._conn.close()
+            except (serial.SerialException, OSError):
+                pass
+            self._conn = None
+
+    def _drain(self, quiet=None, limit=15):
+        quiet = self.QUIET if quiet is None else quiet
         data = b""
         last = start = time.time()
         while time.time() - last < quiet and time.time() - start < limit:

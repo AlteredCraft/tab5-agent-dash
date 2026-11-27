@@ -10,8 +10,15 @@ A collector on the Mac serves one JSON document. The Tab5 (MicroPython on UIFlow
 
 ```sh
 make test
-make serve ENV=path/to/openrouter.env   # serves http://0.0.0.0:8787/usage.json
-make once ENV=path/to/openrouter.env    # print the payload and exit
+make serve ENV=path/to/openrouter.env   # serves http://0.0.0.0:8787/usage.json until Ctrl-C
+make status                             # is the collector up, are limits arriving, is the Tab5 polling
+make stop                               # stop a collector left running elsewhere
+make payload                            # print the JSON the collector would serve, and exit
+```
+
+`ENV` defaults to `.env.openrouter` in this folder and `WIFI` to `.env.wifi`, when those files exist. Both are ignored by git.
+
+```sh
 ```
 
 The server has no authentication: anyone on the same network can read the usage figures and project names. Pass `HOST=127.0.0.1` to keep it local.
@@ -36,13 +43,14 @@ The Tab5 runs UIFlow2 v2.5.5 (MicroPython 1.27). The app in `device/` polls the 
 make firmware                # once per device: install UIFlow2 (replaces everything on the Tab5)
 make preview                 # draw every theme and the settings screen to previews/*.png, and each theme's sound to *.wav
 make preview-live            # the same with live data from a running collector
-make start                   # copy changed files to the Tab5 over USB and restart the dashboard
+make deploy                  # copy changed files to the Tab5 over USB and restart the dashboard
 make provision WIFI=FILE     # set Wi-Fi and the collector URL, then start
+make off                     # power the Tab5 off
 ```
 
 `WIFI` names a file with `WIFI_NAME` and `WIFI_PASSWORD`. They are stored in plain text on the device at `/flash/dash/config.json`. The collector URL defaults to this Mac's `.local` name; override it with `URL=`.
 
-`make deploy` copies files without restarting. It interrupts the running app to reach the REPL, so the dashboard stays stopped until `make start`.
+The Tab5's USB console can stop answering while the dashboard keeps running. When that happens, `make deploy` and `make off` ask the collector to pass a restart or power-off request to the Tab5 on its next poll, so they still work as long as `make serve` is running. Only this Mac can make those requests. Without a collector, press the Tab5's reset button with USB connected.
 
 While the Tab5 runs on its battery, every theme shows a small battery outline and charge percentage. It disappears on external power. The reading is `M5.Power.getBatteryLevel()`, shown whenever `isCharging()` is false, so a full battery on USB may also show it.
 
@@ -64,7 +72,7 @@ Device limits that shape themes:
 - Arc angles are whole degrees.
 - A full-screen redraw takes about 0.6 s; animation frames take 8 ms (Day dial) to about 90 ms (Gauge glass, Poster).
 
-Fonts are declared in `device/dash/fonts.py`. Add an entry and run `make start`; fonts rebuild when their inputs change. The sources in `fonts/` are under the SIL Open Font License.
+Fonts are declared in `device/dash/fonts.py`. Add an entry and run `make deploy`; fonts rebuild when their inputs change. The sources in `fonts/` are under the SIL Open Font License.
 
 ### Drawing speed
 

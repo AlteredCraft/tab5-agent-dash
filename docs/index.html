@@ -253,13 +253,13 @@ make</pre>
       </div></li>
       <li><div>
         <h3>Start the collector on the Mac</h3>
-        <p>Leave this running in its own terminal. The env file holds <code>OPENROUTER_API_KEY</code>; leave <code>ENV</code> out to show Claude Code only.</p>
-        <pre>make serve ENV=path/to/openrouter.env</pre>
+        <p>Leave this running in its own terminal. Put <code>OPENROUTER_API_KEY=…</code> in a file named <code>.env.openrouter</code> in this folder, or skip the file to show Claude Code only.</p>
+        <pre>make serve</pre>
       </div></li>
       <li><div>
         <h3>Install the dashboard</h3>
-        <p>Write a two-line file with your network's <code>WIFI_NAME</code> and <code>WIFI_PASSWORD</code>. This copies the app and its fonts to the Tab5, stores the Wi-Fi details on it in plain text, and restarts it into the dashboard. Figures appear a few seconds later.</p>
-        <pre>make provision WIFI=path/to/wifi.env</pre>
+        <p>Write a two-line file named <code>.env.wifi</code> in this folder with your network's <code>WIFI_NAME</code> and <code>WIFI_PASSWORD</code>. This copies the app and its fonts to the Tab5, stores the Wi-Fi details on it in plain text, and restarts it into the dashboard. Figures appear a few seconds later.</p>
+        <pre>make provision</pre>
       </div></li>
       <li><div>
         <h3>Turn on the limits</h3>
@@ -270,7 +270,7 @@ make</pre>
 }</pre>
       </div></li>
     </ol>
-    <p style="margin-top:22px">After a code change, <code>make start</code> updates the Tab5. The collector has no authentication. Anyone on the same network can read your usage figures and project names; <code>make serve HOST=127.0.0.1</code> keeps it on the Mac.</p>
+    <p style="margin-top:22px">After a code change, <code>make deploy</code> updates the Tab5, and <code>make status</code> shows whether each piece is up. The collector has no authentication. Anyone on the same network can read your usage figures and project names; <code>make serve HOST=127.0.0.1</code> keeps it on the Mac.</p>
   </section>
 
   <section id="tasks">
@@ -283,8 +283,12 @@ make</pre>
         <tr><td><code>make preview</code></td><td>Draws all themes to PNG on the Mac with sample data</td></tr>
         <tr><td><code>make preview-live</code></td><td>The same, with live data from the running collector</td></tr>
         <tr><td><code>make firmware</code></td><td>Installs UIFlow2 on a Tab5, once per device</td></tr>
-        <tr><td><code>make provision WIFI=…</code></td><td>Sets Wi-Fi and the collector address, then starts the dashboard</td></tr>
-        <tr><td><code>make start</code></td><td>Copies changed files to the Tab5 and restarts the dashboard</td></tr>
+        <tr><td><code>make provision</code></td><td>Sets Wi-Fi and the collector address, then starts the dashboard</td></tr>
+        <tr><td><code>make serve</code></td><td>Runs the collector until you press Ctrl-C</td></tr>
+        <tr><td><code>make status</code></td><td>Shows whether the collector is up, limits are arriving and the Tab5 is polling</td></tr>
+        <tr><td><code>make stop</code></td><td>Stops a collector left running in another terminal</td></tr>
+        <tr><td><code>make deploy</code></td><td>Copies changed files to the Tab5 and restarts the dashboard</td></tr>
+        <tr><td><code>make off</code></td><td>Powers the Tab5 off</td></tr>
         <tr><td><code>make ports</code></td><td>Shows which serial port is the Tab5</td></tr>
       </tbody>
     </table>
@@ -319,7 +323,7 @@ def regions():
                _cost, key=_cents),
     ]</pre>
     </div>
-    <p style="margin-top:22px">Add the module to <code>themes/__init__.py</code>, run <code>make preview</code> to see it, and <code>make start</code> to put it on the device. The Mac preview runs the same theme code with the same font files, and its text measurements were checked against the device, so what you see in the PNG is the layout you get on the screen.</p>
+    <p style="margin-top:22px">Add the module to <code>themes/__init__.py</code>, run <code>make preview</code> to see it, and <code>make deploy</code> to put it on the device. The Mac preview runs the same theme code with the same font files, and its text measurements were checked against the device, so what you see in the PNG is the layout you get on the screen.</p>
 
     <div class="limits">
       <div><b>One font</b><span>per animated region. Switching fonts on the device costs about 10 ms each time.</span></div>

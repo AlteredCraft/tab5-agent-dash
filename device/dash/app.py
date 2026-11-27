@@ -5,10 +5,11 @@ import socket
 import time
 
 import M5
+import machine
 import network
 import requests
 
-from . import model, settings, sound
+from . import control, model, settings, sound
 from .engine import Engine
 from .gestures import DoubleTap
 from .lcd_surface import LcdScreen
@@ -117,6 +118,7 @@ def run():
     engine.set_model(view, clock)
 
     payload = None
+    first_control = None
     target = None
     last_ok = None
     next_poll = 0
@@ -166,6 +168,14 @@ def run():
                 target = target or _resolved(config["url"])
                 fresh = _fetch(target) if target else None
             if fresh:
+                requested = fresh.get("control") or {}
+                if first_control is None:
+                    first_control = requested
+                wanted = control.action(first_control, requested)
+                if wanted == "off":
+                    M5.Power.powerOff()
+                elif wanted == "restart":
+                    machine.reset()
                 payload = fresh
                 last_ok = clock
             else:

@@ -1,8 +1,8 @@
 """Copy the dashboard app to the Tab5 and (optionally) configure and start it.
 
-    uv run python -m tools.deploy                            # sync changed files
-    uv run python -m tools.deploy --wifi-env FILE --url URL  # also write the device config
-    uv run python -m tools.deploy --start                    # run main.py at boot and restart
+    uv run python -m tools.deploy --start                            # sync changed files and restart
+    uv run python -m tools.deploy --wifi-env FILE --url URL --start  # also write the device config
+    uv run python -m tools.deploy                                    # sync only; leaves the dashboard stopped
 """
 
 import argparse
@@ -11,7 +11,9 @@ import binascii
 import json
 from pathlib import Path
 
-from tools.board import Board
+import serial
+
+from tools.board import Board, BoardError, ask_over_wifi
 
 ROOT = Path(__file__).resolve().parent.parent / "device"
 DEVICE_ROOT = "/flash"
@@ -72,7 +74,11 @@ def local_files():
 
 def read_env(path):
     values = {}
-    for line in Path(path).read_text().splitlines():
+    try:
+        text = Path(path).read_text()
+    except OSError:
+        raise SystemExit("Wi-Fi file %s not found." % path) from None
+    for line in text.splitlines():
         name, separator, value = line.strip().partition("=")
         if separator and not name.startswith("#"):
             values[name.strip()] = value.strip().strip("'\"")
@@ -87,8 +93,42 @@ def main():
     parser.add_argument("--start", action="store_true", help="run the app at boot and restart the device")
     args = parser.parse_args()
 
-    board = Board(args.port)
+    # Check the input first: connecting stops the running dashboard.
+    config = None
+    if args.wifi_env or args.url:
+        if not (args.wifi_env and args.url):
+            parser.error("--wifi-env and --url go together")
+        env = read_env(args.wifi_env)
+        if not env.get("WIFI_NAME") or "WIFI_PASSWORD" not in env:
+            raise SystemExit("%s needs two lines: WIFI_NAME=... and WIFI_PASSWORD=..." % args.wifi_env)
+        config = {"wifi_ssid": env["WIFI_NAME"], "wifi_password": env["WIFI_PASSWORD"], "url": args.url}
     files = local_files()
+
+    try:
+        sync(args, files, config)
+    except BoardError as error:
+        raise SystemExit(str(error)) from None
+    except (serial.SerialException, OSError) as error:
+        raise SystemExit(
+            "Lost the USB connection to the Tab5 (%s).\nCheck the cable and run the command again." % error
+        ) from None
+
+
+def connect(port):
+    """The Tab5's USB console sometimes stops answering while the dashboard
+    runs. A restart with USB connected brings it back, and the collector can
+    ask for one over Wi-Fi."""
+    try:
+        return Board(port, wait=12)
+    except BoardError:
+        if not ask_over_wifi("restart"):
+            raise
+    print("The Tab5 is not answering on USB. Asked it to restart over Wi-Fi; waiting...")
+    return Board(port, wait=60)
+
+
+def sync(args, files, config):
+    board = connect(args.port)
     remote = ast.literal_eval(board.run(LIST_REMOTE % DEVICE_ROOT, timeout=120).strip())
     directories = sorted({path.rsplit("/", 1)[0] for path in files if path.count("/") > 2})
     board.run(MAKE_DIRS % (directories,))
@@ -103,22 +143,19 @@ def main():
             print("remove", path)
             board.run("import os\nos.remove(%r)" % path)
 
-    if args.wifi_env or args.url:
-        if not (args.wifi_env and args.url):
-            parser.error("--wifi-env and --url go together")
-        env = read_env(args.wifi_env)
-        config = {"wifi_ssid": env["WIFI_NAME"], "wifi_password": env["WIFI_PASSWORD"], "url": args.url}
+    if config:
         board.write_file(DEVICE_ROOT + "/dash/config.json", json.dumps(config).encode())
-        print("wrote device config for network", env["WIFI_NAME"])
+        print("wrote device config for network", config["wifi_ssid"], "and collector", config["url"])
 
     if args.start:
         try:
             board.run(START, timeout=5)
         except Exception:
             pass
-        print("restarting into the dashboard")
+        print("Done. The Tab5 is restarting into the dashboard.")
     else:
         board.close()
+        print("Done. The dashboard is stopped; run with --start to restart it.")
 
 
 if __name__ == "__main__":

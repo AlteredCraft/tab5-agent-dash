@@ -84,11 +84,55 @@ def test_server_serves_usage_json(running_server):
     with urllib.request.urlopen(f"{running_server}/usage.json", timeout=5) as response:
         assert response.headers["Content-Type"] == "application/json"
         payload = json.loads(response.read())
-    assert set(payload) == {"generated_at", "claude_code", "openrouter"}
+    assert set(payload) == {"generated_at", "claude_code", "openrouter", "control"}
     assert payload["openrouter"] is None
 
 
 def test_server_returns_404_for_other_paths(running_server):
     with pytest.raises(urllib.error.HTTPError) as error:
         urllib.request.urlopen(f"{running_server}/etc/passwd", timeout=5)
+    assert error.value.code == 404
+
+
+def test_server_reports_when_each_client_last_asked(running_server):
+    with urllib.request.urlopen(f"{running_server}/status.json", timeout=5) as response:
+        assert json.loads(response.read()) == {"seconds_since_request": {}}
+    urllib.request.urlopen(f"{running_server}/usage.json", timeout=5).close()
+    with urllib.request.urlopen(f"{running_server}/status.json", timeout=5) as response:
+        seen = json.loads(response.read())["seconds_since_request"]
+    assert list(seen) == ["127.0.0.1"] and 0 <= seen["127.0.0.1"] < 5
+
+
+def test_main_explains_a_port_already_in_use(running_server, monkeypatch, tmp_path):
+    port = running_server.rsplit(":", 1)[1]
+    monkeypatch.setattr("sys.argv", ["server", "--host", "127.0.0.1", "--port", port, "--claude-dir", str(tmp_path)])
+    with pytest.raises(SystemExit) as stopped:
+        server.main()
+    assert "already in use" in str(stopped.value) and "make stop" in str(stopped.value)
+
+
+def test_main_explains_a_missing_key_file(monkeypatch, tmp_path):
+    monkeypatch.setattr("sys.argv", ["server", "--once", "--env", str(tmp_path / "nope.env")])
+    with pytest.raises(SystemExit) as stopped:
+        server.main()
+    assert "nope.env not found" in str(stopped.value)
+
+
+def test_control_requests_reach_the_device_through_the_payload(running_server):
+    with urllib.request.urlopen(f"{running_server}/usage.json", timeout=5) as response:
+        assert json.loads(response.read())["control"] == {"restart": 0, "off": 0}
+
+    request = urllib.request.Request(f"{running_server}/control/restart", method="POST")
+    with urllib.request.urlopen(request, timeout=5) as response:
+        requested = json.loads(response.read())["restart"]
+    assert requested > 0
+
+    with urllib.request.urlopen(f"{running_server}/usage.json", timeout=5) as response:
+        assert json.loads(response.read())["control"] == {"restart": requested, "off": 0}
+
+
+def test_unknown_control_request_is_rejected(running_server):
+    request = urllib.request.Request(f"{running_server}/control/explode", method="POST")
+    with pytest.raises(urllib.error.HTTPError) as error:
+        urllib.request.urlopen(request, timeout=5)
     assert error.value.code == 404

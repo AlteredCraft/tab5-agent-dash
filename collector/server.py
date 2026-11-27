@@ -1,6 +1,7 @@
 """Serves the dashboard payload at GET /usage.json for the Tab5 to poll."""
 
 import argparse
+import errno
 import json
 import os
 import time
@@ -64,17 +65,40 @@ def build_payload(store, limits_path, openrouter, now=None, tz=None):
 
 def make_server(host, port, store, limits_path, openrouter):
     payload = Cached(lambda: build_payload(store, limits_path, openrouter), CLAUDE_TTL_SECONDS)
-    clients = set()
+    last_seen = {}
+    # Restart and power-off requests for the device, as the time each was made
+    # (see device/dash/control.py). Only this Mac may make them.
+    control = {"restart": 0, "off": 0}
 
     class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            if self.path.split("?")[0] != "/usage.json":
+        def do_POST(self):
+            name = self.path.removeprefix("/control/")
+            if name not in control or not self.client_address[0].startswith("127."):
                 self.send_error(404)
                 return
-            if self.client_address[0] not in clients:
-                clients.add(self.client_address[0])
-                print("First request from", self.client_address[0], flush=True)
-            body = json.dumps(payload.get(), separators=(",", ":")).encode()
+            control[name] = int(time.time())
+            body = json.dumps(control).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            path = self.path.split("?")[0]
+            address = self.client_address[0]
+            if path == "/status.json":
+                now = time.time()
+                clients = {client: round(now - seen, 1) for client, seen in last_seen.items()}
+                body = json.dumps({"seconds_since_request": clients}).encode()
+            elif path == "/usage.json":
+                if address not in last_seen:
+                    print("First request from", address, flush=True)
+                last_seen[address] = time.time()
+                body = json.dumps(dict(payload.get(), control=control), separators=(",", ":")).encode()
+            else:
+                self.send_error(404)
+                return
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
@@ -105,7 +129,10 @@ def main():
 
     env = dict(os.environ)
     for path in args.env:
-        env.update(load_env_file(path))
+        try:
+            env.update(load_env_file(path))
+        except OSError:
+            raise SystemExit(f"Key file {path} not found. It should hold a line like OPENROUTER_API_KEY=...") from None
     api_key = env.get("OPENROUTER_API_KEY")
     management_key = env.get("OPENROUTER_MANAGEMENT_KEY")
 
@@ -116,8 +143,18 @@ def main():
         print(json.dumps(build_payload(store, args.limits_file, openrouter), indent=2))
         return
 
-    httpd = make_server(args.host, args.port, store, args.limits_file, openrouter)
+    try:
+        httpd = make_server(args.host, args.port, store, args.limits_file, openrouter)
+    except OSError as error:
+        if error.errno != errno.EADDRINUSE:
+            raise
+        raise SystemExit(
+            f"Port {args.port} is already in use, so a collector is probably running already.\n"
+            "Check with `make status`; stop it with `make stop`."
+        ) from None
     print(f"Serving http://{args.host}:{args.port}/usage.json", flush=True)
+    if not api_key and not management_key:
+        print("No OpenRouter key given, so only Claude Code usage is served.", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

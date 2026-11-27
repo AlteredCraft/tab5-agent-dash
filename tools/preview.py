@@ -88,8 +88,13 @@ def main():
     parser.add_argument("--no-sound", action="store_true", help="skip writing <theme>.wav")
     args = parser.parse_args()
     if args.url:
-        with urllib.request.urlopen(args.url, timeout=10) as response:
-            payload = json.loads(response.read())
+        try:
+            with urllib.request.urlopen(args.url, timeout=10) as response:
+                payload = json.loads(response.read())
+        except OSError as error:
+            raise SystemExit(
+                "Could not read %s (%s).\nStart the collector with `make serve` first." % (args.url, error)
+            ) from None
     else:
         payload = sample_payload()
     args.out.mkdir(parents=True, exist_ok=True)
