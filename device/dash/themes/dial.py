@@ -9,6 +9,15 @@ from ..widgets import battery
 NAME = "Day dial"
 BACKGROUND = 0x1B1530
 ANIMATE = ("today_cost",)
+# A clock tick and tock, then a soft two-note bell.
+SOUND = (
+    (0, 12, 0, 0, "noise", 30),
+    (90, 12, 0, 0, "noise", 22),
+    (170, 500, 659, 659, "sine", 45),
+    (170, 300, 1318, 1318, "sine", 12),
+    (300, 650, 988, 988, "sine", 40),
+    (300, 350, 1976, 1976, "sine", 10),
+)
 
 TRACK = 0x2E2550
 ORANGE = 0xFF9F45
